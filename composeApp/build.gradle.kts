@@ -24,7 +24,6 @@ kotlin {
             // Для Ant (если нужно)
             implementation("org.apache.ant:ant:1.10.12")
 
-            implementation("io.github.vinceglb:filekit-dialogs-compose:0.10.0-beta04")
             implementation("com.github.therealbush:translator:1.1.1")
             implementation(compose.runtime)
             implementation(compose.foundation)
