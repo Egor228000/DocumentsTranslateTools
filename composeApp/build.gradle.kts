@@ -1,16 +1,16 @@
 import org.jetbrains.compose.desktop.application.dsl.TargetFormat
-import java.util.regex.Pattern.compile
 
 plugins {
     alias(libs.plugins.kotlinMultiplatform)
     alias(libs.plugins.composeMultiplatform)
     alias(libs.plugins.composeCompiler)
-    alias(libs.plugins.composeHotReload)
 }
 
 kotlin {
+
     jvm("desktop")
     sourceSets {
+
         val desktopMain by getting
 
         commonMain.dependencies {
@@ -37,7 +37,9 @@ kotlin {
             implementation(compose.desktop.currentOs)
             implementation(libs.kotlinx.coroutinesSwing)
         }
+
     }
+
 }
 
 
@@ -47,9 +49,20 @@ compose.desktop {
         mainClass = "org.example.project.MainKt"
 
         nativeDistributions {
-            targetFormats(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb)
-            packageName = "org.example.project"
+            modules("java.sql")
+
+            targetFormats(TargetFormat.Exe, TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb)
+            packageName = "DocumentTools"
             packageVersion = "1.0.0"
+            windows {
+                packageVersion = "1.0.0"
+                exePackageVersion = "1.0.0"
+            }
+        }
+
+        buildTypes.release.proguard {
+            optimize.set(false)
         }
     }
+
 }
