@@ -17,7 +17,13 @@ kotlin {
             implementation("org.apache.pdfbox:pdfbox:2.0.28")
             implementation("org.apache.poi:poi:4.1.2")
             implementation("org.apache.poi:poi-ooxml:4.1.2")
-            implementation("org.apache.poi:poi-ooxml-schemas:1.4")
+            // Для JAXB
+            implementation("javax.xml.bind:jaxb-api:2.3.1")
+            implementation("org.glassfish.jaxb:jaxb-runtime:2.3.3")
+
+            // Для Ant (если нужно)
+            implementation("org.apache.ant:ant:1.10.12")
+
             implementation("io.github.vinceglb:filekit-dialogs-compose:0.10.0-beta04")
             implementation("com.github.therealbush:translator:1.1.1")
             implementation(compose.runtime)
@@ -53,11 +59,12 @@ compose.desktop {
 
             targetFormats(TargetFormat.Exe, TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb)
             packageName = "DocumentTools"
-            packageVersion = "1.0.0"
+            packageVersion = "1.0.1"
             windows {
-                packageVersion = "1.0.0"
-                exePackageVersion = "1.0.0"
+                packageVersion = "1.0.1"
+                exePackageVersion = "1.0.1"
             }
+            includeAllModules = true
         }
 
         buildTypes.release.proguard {

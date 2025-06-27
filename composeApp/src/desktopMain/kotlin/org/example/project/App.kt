@@ -24,13 +24,10 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import me.bush.translator.Language
 import me.bush.translator.Translator
-import org.apache.pdfbox.cos.COSName
 import org.apache.pdfbox.pdmodel.PDDocument
 import org.apache.pdfbox.pdmodel.PDPage
 import org.apache.pdfbox.pdmodel.PDPageContentStream
-import org.apache.pdfbox.pdmodel.font.PDTrueTypeFont
 import org.apache.pdfbox.pdmodel.font.PDType0Font
-import org.apache.pdfbox.pdmodel.font.encoding.Encoding
 import org.apache.pdfbox.text.PDFTextStripper
 import org.apache.poi.ss.usermodel.CellType
 import org.apache.poi.xssf.usermodel.XSSFWorkbook
@@ -40,10 +37,8 @@ import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.ui.tooling.preview.Preview
 import java.awt.datatransfer.DataFlavor
 import java.io.File
-import java.io.FileInputStream
 import java.io.FileOutputStream
-import java.util.Locale
-import kotlin.collections.contains
+import java.util.*
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -407,7 +402,7 @@ fun App() {
                                         val page = PDPage()
                                         newPdf.addPage(page)
 
-                                        val fontFile = File("build/processedResources/desktop/main/arialmt.ttf")
+                                        val fontFile = javaClass.getResourceAsStream("/arialmt.ttf")
                                         val font = PDType0Font.load(newPdf, fontFile)
 
                                         PDPageContentStream(newPdf, page).use { stream ->
