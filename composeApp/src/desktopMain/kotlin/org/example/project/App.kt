@@ -191,7 +191,7 @@ fun App() {
                 expanded = expandedLanguage,
                 onExpandedChange = { newExpanded ->
                     expandedLanguage = newExpanded
-                    searchQuery = ""   // теперь всегда очищаем при переключении
+                    searchQuery = ""
                 },
                 modifier = Modifier.fillMaxWidth()
             ) {
@@ -206,9 +206,9 @@ fun App() {
                         ExposedDropdownMenuDefaults.TrailingIcon(expanded = expandedLanguage)
                     },
                     modifier = Modifier
-                        .menuAnchor()
+                        .menuAnchor( ExposedDropdownMenuAnchorType.PrimaryEditable, true)
                         .fillMaxWidth(),
-                    placeholder = { Text("Выберите язык перевода") },
+                    placeholder = { Text("Начните вводить язык...") },
                     singleLine = true
                 )
 
@@ -273,7 +273,6 @@ fun App() {
                                         val workbook = XSSFWorkbook(file.inputStream())
                                         val sheet = workbook.getSheetAt(0)
 
-                                        // Считаем количество ячеек для прогресса
                                         for (rowNum in 0..sheet.lastRowNum) {
                                             val row = sheet.getRow(rowNum) ?: continue
                                             for (cellNum in 0 until row.lastCellNum) {
@@ -313,7 +312,6 @@ fun App() {
                                                     translatedCells++
                                                     translationProgress = translatedCells.toFloat() / totalCells
                                                 } else {
-                                                    // Копируем всё прочее «как есть»
                                                     when (cell.cellType) {
                                                         CellType.NUMERIC -> translatedCell.setCellValue(cell.numericCellValue)
                                                         CellType.BOOLEAN -> translatedCell.setCellValue(cell.booleanCellValue)
@@ -337,14 +335,13 @@ fun App() {
                                         // Word (.docx)
                                         val doc = XWPFDocument(file.inputStream())
 
-                                        // Переводим параграфы
                                         doc.paragraphs.forEach { p ->
-                                            totalCells++  // Увеличиваем общее количество элементов
+                                            totalCells++
 
                                             val original = p.text
                                             if (original.isNotBlank()) {
                                                 val tr = try {
-                                                    translatedCells++  // Увеличиваем количество переведённых элементов
+                                                    translatedCells++
                                                     translator.translateBlocking(
                                                         original,
                                                         Language(lang),
@@ -353,20 +350,17 @@ fun App() {
                                                 } catch (e: Exception) {
                                                     null
                                                 }
-                                                // Заменяем текст параграфа:
                                                 p.runs.forEach { run -> run.setText(tr?.translatedText ?: original, 0) }
                                                 translationProgress = translatedCells.toFloat() / totalCells  // Обновляем прогресс
 
-                                                // Обновление прогресса (можно заменить на обновление UI, если нужно)
                                                 println("Перевод параграфа: ${(translationProgress * 100).toInt()}%")
                                             }
                                         }
 
-                                        // Переводим таблицы
                                         doc.tables.forEach { table ->
                                             table.rows.forEach { row ->
                                                 row.tableCells.forEach { cell ->
-                                                    totalCells++  // Увеличиваем общее количество элементов
+                                                    totalCells++
 
                                                     val original = cell.text
                                                     if (original.isNotBlank()) {
@@ -379,14 +373,13 @@ fun App() {
                                                         } catch (e: Exception) {
                                                             null
                                                         }
-                                                        cell.removeParagraph(0)  // Убираем старый текст
-                                                        cell.setText(tr?.translatedText ?: original)  // Устанавливаем переведённый текст
+                                                        cell.removeParagraph(0)
+                                                        cell.setText(tr?.translatedText ?: original)
                                                     }
                                                 }
                                             }
                                         }
 
-                                        // Сохраняем переведённый документ
                                         val outFile = File(file.parentFile, "${file.nameWithoutExtension}_translated.docx")
                                         FileOutputStream(outFile).use { fos ->
                                             doc.write(fos)
@@ -394,7 +387,6 @@ fun App() {
                                         doc.close()
                                         outOpen = outFile
 
-                                        // Обновляем статус перевода
                                         translationStatus = "Word документ переведён и сохранён как ${outFile.name}"
                                         println("Перевод завершён. Прогресс: 100%")
                                     }
@@ -488,9 +480,9 @@ fun App() {
                     Button(
                         onClick = {
                             outOpen?.let { file ->
-                                openFile(file)  // Открытие переведённого файла
+                                openFile(file)
                             } ?: run {
-                                // Выводим сообщение или выполняем действия, если файл не найден
+
                                 println("Файл не найден")
                             }
                         }
@@ -508,9 +500,8 @@ fun App() {
 }
 fun openFile(file: File) {
     try {
-        java.awt.Desktop.getDesktop().open(file)  // Открываем файл с помощью Desktop
+        java.awt.Desktop.getDesktop().open(file)
     } catch (e: Exception) {
-        // Обработка ошибок при попытке открыть файл
         println(" ${e.message}")
     }
 }
