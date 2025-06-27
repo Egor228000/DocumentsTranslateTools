@@ -2,30 +2,26 @@ package org.example.project
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.ScrollbarStyle
-import androidx.compose.foundation.VerticalScrollbar
 import androidx.compose.foundation.background
 import androidx.compose.foundation.draganddrop.dragAndDropTarget
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.rememberScrollbarAdapter
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.awt.ComposePanel
 import androidx.compose.ui.draganddrop.DragAndDropEvent
 import androidx.compose.ui.draganddrop.DragAndDropTarget
 import androidx.compose.ui.draganddrop.awtTransferable
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import exceltranslate.composeapp.generated.resources.Res
-import exceltranslate.composeapp.generated.resources.gsheet_document_svgrepo_com
-import exceltranslate.composeapp.generated.resources.pdf_document_svgrepo_com
-import exceltranslate.composeapp.generated.resources.word_document_svgrepo_com
+import androidx.compose.ui.unit.sp
+import exceltranslate.composeapp.generated.resources.*
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import me.bush.translator.Language
 import me.bush.translator.Translator
@@ -40,10 +36,12 @@ import org.apache.poi.xwpf.usermodel.XWPFDocument
 import org.jetbrains.compose.resources.DrawableResource
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.ui.tooling.preview.Preview
+import java.awt.Toolkit
 import java.awt.datatransfer.DataFlavor
 import java.io.File
 import java.io.FileOutputStream
 import java.util.*
+import javax.swing.JFrame
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -506,11 +504,103 @@ fun App() {
 
                 }
             }
+            var visible by remember { mutableStateOf(false) }
+            Button(
+                onClick = {
+                    visible = true
+                }
+            ) {
+                Text("asd")
+            }
+
+            if (visible) {
+                showCustomNotification(
+                    "DocumentsTranslate",
+                    "Перевод успешно завершен!",
+                    1500
+                )
+                visible = false
+
+            }
+
         }
-
-
     }
 }
+
+fun showCustomNotification(title: String, message: String, durationMillis: Long) {
+    val window = JFrame()
+
+    window.isUndecorated = true
+    window.isAlwaysOnTop = true
+    window.defaultCloseOperation = JFrame.DISPOSE_ON_CLOSE
+
+    val panel = ComposePanel().apply {
+        preferredSize = java.awt.Dimension(300, 100)
+        setContent {
+            NotificationCard(title, message)
+        }
+    }
+
+    window.contentPane = panel
+    window.pack()
+
+    // Position bottom right
+    val screenSize = Toolkit.getDefaultToolkit().screenSize
+    val width = 300
+    val height = 100
+    val startY = screenSize.height
+    val endY = screenSize.height - height - 60
+    val x = screenSize.width - width - 30
+
+    // Initial off-screen position
+    window.setLocation(x, startY)
+    window.isVisible = true
+
+    // Slide up animation (optional)
+    CoroutineScope(Dispatchers.IO).launch {
+        for (y in startY downTo endY step 5) {
+            delay(5)
+            window.setLocation(x, y)
+        }
+        delay(durationMillis)
+        for (y in endY..startY step 5) {
+            delay(5)
+            window.setLocation(x, y)
+        }
+        window.isVisible = false
+        window.dispose()
+    }
+}
+
+@Composable
+fun NotificationCard(title: String, message: String) {
+
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color(0xFF1E1E1E))
+            .padding(16.dp)
+
+
+    ) {
+        Image(
+            painterResource(Res.drawable.icons),
+            null,
+            modifier = Modifier.size(48.dp)
+        )
+        Spacer(modifier = Modifier.padding(start = 16.dp))
+
+        Column(
+        ) {
+            Text(title, color = Color.White, fontSize = 16.sp)
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(message, color = Color.LightGray, fontSize = 14.sp)
+        }
+    }
+
+}
+
 
 fun openFile(file: File) {
     try {
