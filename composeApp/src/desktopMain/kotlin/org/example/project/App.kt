@@ -584,7 +584,7 @@ fun FileDropZone(
         ) {
             if (selectedFile == null) {
                 Text(
-                    text = "Перетащите Excel файл сюда",
+                    text = "Перетащите файл сюда",
                     textAlign = TextAlign.Center
                 )
             } else {
