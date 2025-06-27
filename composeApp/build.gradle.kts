@@ -10,11 +10,11 @@ plugins {
 
 kotlin {
     jvm("desktop")
-    
     sourceSets {
         val desktopMain by getting
-        
+
         commonMain.dependencies {
+            implementation("org.apache.pdfbox:pdfbox:2.0.28")
             implementation("org.apache.poi:poi:4.1.2")
             implementation("org.apache.poi:poi-ooxml:4.1.2")
             implementation("org.apache.poi:poi-ooxml-schemas:1.4")
@@ -33,6 +33,7 @@ kotlin {
             implementation(libs.kotlin.test)
         }
         desktopMain.dependencies {
+
             implementation(compose.desktop.currentOs)
             implementation(libs.kotlinx.coroutinesSwing)
         }
@@ -41,6 +42,7 @@ kotlin {
 
 
 compose.desktop {
+
     application {
         mainClass = "org.example.project.MainKt"
 
