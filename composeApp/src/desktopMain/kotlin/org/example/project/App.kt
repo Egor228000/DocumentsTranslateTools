@@ -44,7 +44,8 @@ fun App() {
         val translator = remember { Translator() }
         val scope = rememberCoroutineScope()
         var expandedLanguage by remember { mutableStateOf(false) }
-        var lang by remember { mutableStateOf("") }
+        var lang by remember { mutableStateOf("ENGLISH") }
+        var searchQuery by remember { mutableStateOf("") }
         val langList = listOf(
             "AFRIKAANS",
             "ALBANIAN",
@@ -157,149 +158,165 @@ fun App() {
 
         Column(
             modifier = Modifier
-                .safeContentPadding()
+                .padding(16.dp)
                 .fillMaxSize(),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-                ExposedDropdownMenuBox(
-                    expanded = expandedLanguage,
-                    onExpandedChange = { expandedLanguage = !expandedLanguage },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                ) {
-                    // 1) The text field that shows the current selection
-                    OutlinedTextField(
-                        value = lang,
-                        onValueChange = { /* readOnly = true, so ignore */ },
-                        readOnly = true,
-                        label = { Text("Форм-фактор") },
-                        trailingIcon = {
-                            ExposedDropdownMenuDefaults.TrailingIcon(expanded = expandedLanguage)
-                        },
-                        modifier = Modifier
-                            .menuAnchor(
-                                ExposedDropdownMenuAnchorType.PrimaryNotEditable,
-                                true
-                            )   // anchors the menu to the text field
-                            .fillMaxWidth()
-                    )
+            val filteredLangList = remember(langList, searchQuery) {
+                if (searchQuery.isEmpty()) {
+                    langList
+                } else {
+                    langList.filter { it.contains(searchQuery, ignoreCase = true) }
+                }
+            }
 
-                    // 2) The dropdown menu itself
-                    ExposedDropdownMenu(
-                        expanded = expandedLanguage,
-                        onDismissRequest = { expandedLanguage = false }
-                    ) {
-                        langList.forEach { option ->
+            ExposedDropdownMenuBox(
+                expanded = expandedLanguage,
+                onExpandedChange = { newExpanded ->
+                    expandedLanguage = newExpanded
+                    searchQuery = ""   // теперь всегда очищаем при переключении
+                },
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                OutlinedTextField(
+                    value = if (expandedLanguage) searchQuery else lang,
+                    onValueChange = { newValue ->
+                        searchQuery = newValue
+                        if (!expandedLanguage) expandedLanguage = true
+                    },
+                    label = { Text("Язык") },
+                    trailingIcon = {
+                        ExposedDropdownMenuDefaults.TrailingIcon(expanded = expandedLanguage)
+                    },
+                    modifier = Modifier
+                        .menuAnchor()
+                        .fillMaxWidth(),
+                    placeholder = { Text("Выберите язык перевода") },
+                    singleLine = true
+                )
+
+                ExposedDropdownMenu(
+                    expanded = expandedLanguage,
+                    onDismissRequest = {
+                        expandedLanguage = false
+                        searchQuery = ""
+                    },
+                    modifier = Modifier.heightIn(max = 300.dp)
+                ) {
+                    if (filteredLangList.isEmpty()) {
+                        DropdownMenuItem(
+                            text = { Text("Язык не найден") },
+                            onClick = { /*…*/ },
+                            enabled = false
+                        )
+                    } else {
+                        filteredLangList.forEach { option ->
                             DropdownMenuItem(
                                 text = { Text(option) },
                                 onClick = {
-                                   lang = option
-
+                                    lang = option
+                                    searchQuery = ""
                                     expandedLanguage = false
                                 }
                             )
                         }
                     }
                 }
-
-                FileDropZone(
-                    onFileDropped = { file ->
-                        selectedFile = file
-                        translationStatus = null
-                        translationProgress = 0f
-                    },
-                    onClickClear = {
-                        selectedFile = null
-                        translationStatus = null
-                        translationProgress = 0f
-                    },
-                    selectedFile = selectedFile,
-                    onTranslateClick = {
-                        selectedFile?.let { file ->
-                            scope.launch(Dispatchers.IO) {
-                                try {
-                                    isTranslating = true
-                                    translationStatus = ""
-                                    translationProgress = 0f
-                                    translatedCells = 0
-
-                                    // Подсчет общего количества ячеек для перевода
-                                    val workbook = XSSFWorkbook(file.inputStream())
-                                    val sheet = workbook.getSheetAt(0)
-
-                                    // Первый проход - подсчет ячеек
-                                    totalCells = 0
-                                    for (rowNum in 0..sheet.lastRowNum) {
-                                        val row = sheet.getRow(rowNum) ?: continue
-                                        for (cellNum in 0..row.lastCellNum) {
-                                            val cell = row.getCell(cellNum) ?: continue
-                                            if (cell.cellType == CellType.STRING && cell.stringCellValue.isNotBlank()) {
-                                                totalCells++
-                                            }
-                                        }
-                                    }
-
-                                    // Второй проход - перевод
-                                    val translatedWorkbook = XSSFWorkbook()
-                                    val translatedSheet = translatedWorkbook.createSheet("Перевод")
-
-                                    for (rowNum in 0..sheet.lastRowNum) {
-                                        val row = sheet.getRow(rowNum) ?: continue
-                                        val translatedRow = translatedSheet.createRow(rowNum)
-
-                                        for (cellNum in 0..row.lastCellNum) {
-                                            val cell = row.getCell(cellNum) ?: continue
-                                            val translatedCell = translatedRow.createCell(cellNum)
-
-                                            when (cell.cellType) {
-                                                CellType.STRING -> {
-                                                    val text = cell.stringCellValue
-                                                    if (text.isNotBlank()) {
-                                                        try {
-                                                            val translation = translator.translateBlocking(
-                                                                text,
-                                                                Language(lang),
-                                                                Language.AUTO
-                                                            )
-                                                            translatedCell.setCellValue(translation.translatedText)
-                                                        } catch (e: Exception) {
-                                                            translatedCell.setCellValue("Ошибка перевода: ${e.message}")
-                                                        }
-                                                        translatedCells++
-                                                        translationProgress = translatedCells.toFloat() / totalCells
-                                                    }
-                                                }
-
-                                                else -> {
-                                                    when (cell.cellType) {
-                                                        CellType.NUMERIC -> translatedCell.setCellValue(cell.numericCellValue)
-                                                        CellType.BOOLEAN -> translatedCell.setCellValue(cell.booleanCellValue)
-                                                        else -> translatedCell.setCellValue(cell.toString())
-                                                    }
-                                                }
-                                            }
-                                        }
-                                    }
-
-                                    val outputFile =
-                                        File(file.parentFile, "${file.nameWithoutExtension}_translated.xlsx")
-                                    FileOutputStream(outputFile).use { fos ->
-                                        translatedWorkbook.write(fos)
-                                    }
-
-                                    translationStatus = "Перевод завершен! Сохранено в: ${outputFile.name}"
-                                } catch (e: Exception) {
-                                    translationStatus = "Ошибка: ${e.message}"
-                                } finally {
-                                    isTranslating = false
-                                }
-                            }
-                        }
-                    },
-                    isTranslating = isTranslating
-                )
             }
 
+            FileDropZone(
+                onFileDropped = { file ->
+                    selectedFile = file
+                    translationStatus = null
+                    translationProgress = 0f
+                },
+                onClickClear = {
+                    selectedFile = null
+                    translationStatus = null
+                    translationProgress = 0f
+                },
+                selectedFile = selectedFile,
+                onTranslateClick = {
+                    selectedFile?.let { file ->
+                        scope.launch(Dispatchers.IO) {
+                            try {
+                                isTranslating = true
+                                translationStatus = ""
+                                translationProgress = 0f
+                                translatedCells = 0
+
+                                val workbook = XSSFWorkbook(file.inputStream())
+                                val sheet = workbook.getSheetAt(0)
+
+                                totalCells = 0
+                                for (rowNum in 0..sheet.lastRowNum) {
+                                    val row = sheet.getRow(rowNum) ?: continue
+                                    for (cellNum in 0..row.lastCellNum) {
+                                        val cell = row.getCell(cellNum) ?: continue
+                                        if (cell.cellType == CellType.STRING && cell.stringCellValue.isNotBlank()) {
+                                            totalCells++
+                                        }
+                                    }
+                                }
+
+                                val translatedWorkbook = XSSFWorkbook()
+                                val translatedSheet = translatedWorkbook.createSheet("Перевод")
+
+                                for (rowNum in 0..sheet.lastRowNum) {
+                                    val row = sheet.getRow(rowNum) ?: continue
+                                    val translatedRow = translatedSheet.createRow(rowNum)
+
+                                    for (cellNum in 0..row.lastCellNum) {
+                                        val cell = row.getCell(cellNum) ?: continue
+                                        val translatedCell = translatedRow.createCell(cellNum)
+
+                                        when (cell.cellType) {
+                                            CellType.STRING -> {
+                                                val text = cell.stringCellValue
+                                                if (text.isNotBlank()) {
+                                                    try {
+                                                        val translation = translator.translateBlocking(
+                                                            text,
+                                                            Language(lang),
+                                                            Language.AUTO
+                                                        )
+                                                        translatedCell.setCellValue(translation.translatedText)
+                                                    } catch (e: Exception) {
+                                                        translatedCell.setCellValue("Ошибка перевода: ${e.message}")
+                                                    }
+                                                    translatedCells++
+                                                    translationProgress = translatedCells.toFloat() / totalCells
+                                                }
+                                            }
+
+                                            else -> {
+                                                when (cell.cellType) {
+                                                    CellType.NUMERIC -> translatedCell.setCellValue(cell.numericCellValue)
+                                                    CellType.BOOLEAN -> translatedCell.setCellValue(cell.booleanCellValue)
+                                                    else -> translatedCell.setCellValue(cell.toString())
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+
+                                val outputFile =
+                                    File(file.parentFile, "${file.nameWithoutExtension}_translated.xlsx")
+                                FileOutputStream(outputFile).use { fos ->
+                                    translatedWorkbook.write(fos)
+                                }
+
+                                translationStatus = "Перевод завершен! Сохранено в: ${outputFile.name}"
+                            } catch (e: Exception) {
+                                translationStatus = "Ошибка: ${e.message}"
+                            } finally {
+                                isTranslating = false
+                            }
+                        }
+                    }
+                },
+                isTranslating = isTranslating
+            )
             if (isTranslating) {
                 Spacer(modifier = Modifier.height(16.dp))
                 Column(
@@ -314,8 +331,8 @@ fun App() {
                     Slider(
                         value = translationProgress,
                         onValueChange = {},
-                        modifier = Modifier.width(300.dp),
-                        enabled = false
+                        modifier = Modifier.width(350.dp),
+                        enabled = false,
                     )
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
@@ -334,6 +351,9 @@ fun App() {
                     color = if (status.startsWith("Ошибка")) Color.Red else Color.Unspecified
                 )
             }
+        }
+
+
     }
 }
 
@@ -344,7 +364,7 @@ fun FileDropZone(
     onClickClear: () -> Unit,
     selectedFile: File?,
     onTranslateClick: () -> Unit,
-    isTranslating: Boolean = false
+    isTranslating: Boolean = false,
 ) {
     var isHovering by remember { mutableStateOf(false) }
 
