@@ -2,9 +2,14 @@ package org.example.project
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.ScrollbarStyle
+import androidx.compose.foundation.VerticalScrollbar
 import androidx.compose.foundation.background
 import androidx.compose.foundation.draganddrop.dragAndDropTarget
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.rememberScrollbarAdapter
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -182,6 +187,7 @@ fun App() {
                 }
             }
 
+
             ExposedDropdownMenuBox(
                 expanded = expandedLanguage,
                 onExpandedChange = { newExpanded ->
@@ -190,6 +196,7 @@ fun App() {
                 },
                 modifier = Modifier.fillMaxWidth()
             ) {
+
                 OutlinedTextField(
                     value = if (expandedLanguage) searchQuery else lang,
                     onValueChange = { newValue ->
@@ -201,11 +208,12 @@ fun App() {
                         ExposedDropdownMenuDefaults.TrailingIcon(expanded = expandedLanguage)
                     },
                     modifier = Modifier
-                        .menuAnchor( ExposedDropdownMenuAnchorType.PrimaryEditable, true)
+                        .menuAnchor(ExposedDropdownMenuAnchorType.PrimaryEditable, true)
                         .fillMaxWidth(),
                     placeholder = { Text("Начните вводить язык...") },
                     singleLine = true
                 )
+
 
                 ExposedDropdownMenu(
                     expanded = expandedLanguage,
@@ -215,6 +223,7 @@ fun App() {
                     },
                     modifier = Modifier.heightIn(max = 300.dp)
                 ) {
+
                     if (filteredLangList.isEmpty()) {
                         DropdownMenuItem(
                             text = { Text("Язык не найден") },
@@ -222,6 +231,7 @@ fun App() {
                             enabled = false
                         )
                     } else {
+
                         filteredLangList.forEach { option ->
                             DropdownMenuItem(
                                 text = { Text(option) },
@@ -235,6 +245,7 @@ fun App() {
                     }
                 }
             }
+
             Spacer(modifier = Modifier.height(16.dp))
 
             FileDropZone(
@@ -346,7 +357,8 @@ fun App() {
                                                     null
                                                 }
                                                 p.runs.forEach { run -> run.setText(tr?.translatedText ?: original, 0) }
-                                                translationProgress = translatedCells.toFloat() / totalCells  // Обновляем прогресс
+                                                translationProgress =
+                                                    translatedCells.toFloat() / totalCells  // Обновляем прогресс
 
                                                 println("Перевод параграфа: ${(translationProgress * 100).toInt()}%")
                                             }
@@ -375,7 +387,8 @@ fun App() {
                                             }
                                         }
 
-                                        val outFile = File(file.parentFile, "${file.nameWithoutExtension}_translated.docx")
+                                        val outFile =
+                                            File(file.parentFile, "${file.nameWithoutExtension}_translated.docx")
                                         FileOutputStream(outFile).use { fos ->
                                             doc.write(fos)
                                         }
@@ -393,7 +406,11 @@ fun App() {
                                         pdDoc.close()
 
                                         val translatedText = try {
-                                            translator.translateBlocking(originalText, Language(lang), Language.AUTO).translatedText
+                                            translator.translateBlocking(
+                                                originalText,
+                                                Language(lang),
+                                                Language.AUTO
+                                            ).translatedText
                                         } catch (e: Exception) {
                                             "Ошибка перевода: ${e.message}"
                                         }
@@ -416,7 +433,8 @@ fun App() {
                                             stream.endText()
                                         }
 
-                                        val outPdf = File(file.parentFile, "${file.nameWithoutExtension}_translated.pdf")
+                                        val outPdf =
+                                            File(file.parentFile, "${file.nameWithoutExtension}_translated.pdf")
                                         newPdf.save(outPdf)
                                         newPdf.close()
 
@@ -493,6 +511,7 @@ fun App() {
 
     }
 }
+
 fun openFile(file: File) {
     try {
         java.awt.Desktop.getDesktop().open(file)
