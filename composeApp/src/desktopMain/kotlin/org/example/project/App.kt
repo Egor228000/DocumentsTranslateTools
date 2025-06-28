@@ -5,12 +5,12 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.draganddrop.dragAndDropTarget
 import androidx.compose.foundation.layout.*
+import androidx.compose.material.Button
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.awt.ComposePanel
 import androidx.compose.ui.draganddrop.DragAndDropEvent
 import androidx.compose.ui.draganddrop.DragAndDropTarget
 import androidx.compose.ui.draganddrop.awtTransferable
@@ -18,48 +18,36 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import exceltranslate.composeapp.generated.resources.*
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import me.bush.translator.Language
-import me.bush.translator.Translator
-import org.apache.pdfbox.pdmodel.PDDocument
-import org.apache.pdfbox.pdmodel.PDPage
-import org.apache.pdfbox.pdmodel.PDPageContentStream
-import org.apache.pdfbox.pdmodel.font.PDType0Font
-import org.apache.pdfbox.text.PDFTextStripper
-import org.apache.poi.ss.usermodel.CellType
-import org.apache.poi.xssf.usermodel.XSSFWorkbook
-import org.apache.poi.xwpf.usermodel.XWPFDocument
 import org.jetbrains.compose.resources.DrawableResource
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.ui.tooling.preview.Preview
-import java.awt.Toolkit
 import java.awt.datatransfer.DataFlavor
 import java.io.File
-import java.io.FileOutputStream
 import java.util.*
-import javax.swing.JFrame
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 @Preview
-fun App() {
+fun App(addViewModel: AppViewModel) {
     MaterialTheme {
-        var selectedFile by remember { mutableStateOf<File?>(null) }
-        var translationStatus by remember { mutableStateOf<String?>(null) }
-        var isTranslating by remember { mutableStateOf(false) }
-        var translationProgress by remember { mutableStateOf(0f) }
-        var totalCells by remember { mutableStateOf(0) }
-        var translatedCells by remember { mutableStateOf(0) }
-        val translator = remember { Translator() }
         val scope = rememberCoroutineScope()
+
+        // Состояния из ViewModel
+        val selectedFile by addViewModel.selectedFile.collectAsStateWithLifecycle()
+        val translationStatus by addViewModel.translationStatus.collectAsStateWithLifecycle()
+        val isTranslating by addViewModel.isTranslating.collectAsStateWithLifecycle()
+        val translationProgress by addViewModel.translationProgress.collectAsStateWithLifecycle()
+        val totalCells by addViewModel.totalCells.collectAsStateWithLifecycle()
+        val translatedCells by addViewModel.translatedCells.collectAsStateWithLifecycle()
+        val outOpen by addViewModel.outOpen.collectAsStateWithLifecycle()
+        // Состояние языка и поиска
+        var searchQuery by remember { mutableStateOf("") }
         var expandedLanguage by remember { mutableStateOf(false) }
         var lang by remember { mutableStateOf("RUSSIAN") }
-        var searchQuery by remember { mutableStateOf("") }
-        var outOpen by remember { mutableStateOf<File?>(null) }
         val langList = listOf(
             "AFRIKAANS",
             "ALBANIAN",
@@ -169,8 +157,8 @@ fun App() {
             "YORUBA",
             "ZULU"
         )
-        val file = selectedFile
-        val ext = file?.extension?.lowercase(Locale.getDefault())
+
+        // UI-компоненты
         Column(
             modifier = Modifier
                 .padding(16.dp)
@@ -246,240 +234,37 @@ fun App() {
 
             Spacer(modifier = Modifier.height(16.dp))
 
+            // Загрузка файлов
             FileDropZone(
                 onFileDropped = { file ->
-                    selectedFile = file
-                    translationStatus = null
-                    translationProgress = 0f
+                    addViewModel.addFile(file)
+                    addViewModel.addMessage("")
                 },
                 onClickClear = {
-                    selectedFile = null
-                    translationStatus = null
-                    translationProgress = 0f
+                    addViewModel.clearFile()
+                    addViewModel.addMessage("")
                 },
                 selectedFile = selectedFile,
                 onTranslateClick = {
                     selectedFile?.let { file ->
                         scope.launch(Dispatchers.IO) {
                             try {
-                                isTranslating = true
-                                translationStatus = ""
-                                translationProgress = 0f
-                                translatedCells = 0
-                                totalCells = 0
+                                addViewModel.addBooolean(true)
+                                addViewModel.addMessage("")
 
-                                // Определяем тип файла по расширению
-                                val ext = file.extension.lowercase(Locale.getDefault())
-
-                                when (ext) {
-                                    in listOf("xls", "xlsx", "csv") -> {
-                                        // Excel
-                                        val workbook = XSSFWorkbook(file.inputStream())
-                                        val sheet = workbook.getSheetAt(0)
-
-                                        for (rowNum in 0..sheet.lastRowNum) {
-                                            val row = sheet.getRow(rowNum) ?: continue
-                                            for (cellNum in 0 until row.lastCellNum) {
-                                                val cell = row.getCell(cellNum) ?: continue
-                                                if (cell.cellType == CellType.STRING && cell.stringCellValue.isNotBlank()) {
-                                                    totalCells++
-                                                }
-                                            }
-                                        }
-
-                                        val translatedWorkbook = XSSFWorkbook()
-                                        val translatedSheet = translatedWorkbook.createSheet("Перевод")
-
-                                        for (rowNum in 0..sheet.lastRowNum) {
-                                            val row = sheet.getRow(rowNum) ?: continue
-                                            val translatedRow = translatedSheet.createRow(rowNum)
-
-                                            for (cellNum in 0 until row.lastCellNum) {
-                                                val cell = row.getCell(cellNum) ?: continue
-                                                val translatedCell = translatedRow.createCell(cellNum)
-
-                                                if (cell.cellType == CellType.STRING && cell.stringCellValue.isNotBlank()) {
-                                                    val text = cell.stringCellValue
-                                                    val translation = try {
-                                                        translator.translateBlocking(
-                                                            text,
-                                                            Language(lang),
-                                                            Language.AUTO
-                                                        )
-                                                    } catch (e: Exception) {
-                                                        null
-                                                    }
-                                                    translatedCell.setCellValue(
-                                                        translation?.translatedText
-                                                            ?: "Ошибка перевода"
-                                                    )
-                                                    translatedCells++
-                                                    translationProgress = translatedCells.toFloat() / totalCells
-                                                } else {
-                                                    when (cell.cellType) {
-                                                        CellType.NUMERIC -> translatedCell.setCellValue(cell.numericCellValue)
-                                                        CellType.BOOLEAN -> translatedCell.setCellValue(cell.booleanCellValue)
-                                                        else -> translatedCell.setCellValue(cell.toString())
-                                                    }
-                                                }
-                                            }
-                                        }
-
-                                        val outputFile =
-                                            File(file.parentFile, "${file.nameWithoutExtension}_translated.xlsx")
-                                        FileOutputStream(outputFile).use { fos ->
-                                            translatedWorkbook.write(fos)
-                                        }
-                                        outOpen = outputFile
-
-                                        translationStatus = "Excel переведён и сохранён как ${outputFile.name}"
-                                        scope.launch {
-                                            showCustomNotification(
-                                                "DocumentsTranslate",
-                                                "Перевод успешно завершен!",
-                                                1500
-                                            )
-                                        }
-                                    }
-
-                                    in listOf("doc", "docx", "odt") -> {
-                                        // Word (.docx)
-                                        val doc = XWPFDocument(file.inputStream())
-
-                                        doc.paragraphs.forEach { p ->
-                                            totalCells++
-
-                                            val original = p.text
-                                            if (original.isNotBlank()) {
-                                                val tr = try {
-                                                    translatedCells++
-                                                    translator.translateBlocking(
-                                                        original,
-                                                        Language(lang),
-                                                        Language.AUTO
-                                                    )
-                                                } catch (e: Exception) {
-                                                    null
-                                                }
-                                                p.runs.forEach { run -> run.setText(tr?.translatedText ?: original, 0) }
-                                                translationProgress =
-                                                    translatedCells.toFloat() / totalCells  // Обновляем прогресс
-
-                                                println("Перевод параграфа: ${(translationProgress * 100).toInt()}%")
-                                            }
-                                        }
-
-                                        doc.tables.forEach { table ->
-                                            table.rows.forEach { row ->
-                                                row.tableCells.forEach { cell ->
-                                                    totalCells++
-
-                                                    val original = cell.text
-                                                    if (original.isNotBlank()) {
-                                                        val tr = try {
-                                                            translator.translateBlocking(
-                                                                original,
-                                                                Language(lang),
-                                                                Language.AUTO
-                                                            )
-                                                        } catch (e: Exception) {
-                                                            null
-                                                        }
-                                                        cell.removeParagraph(0)
-                                                        cell.setText(tr?.translatedText ?: original)
-                                                    }
-                                                }
-                                            }
-                                        }
-
-                                        val outFile =
-                                            File(file.parentFile, "${file.nameWithoutExtension}_translated.docx")
-                                        FileOutputStream(outFile).use { fos ->
-                                            doc.write(fos)
-                                        }
-                                        doc.close()
-                                        outOpen = outFile
-
-                                        translationStatus = "Word документ переведён и сохранён как ${outFile.name}"
-                                        println("Перевод завершён. Прогресс: 100%")
-
-                                        scope.launch {
-                                            showCustomNotification(
-                                                "DocumentsTranslate",
-                                                "Перевод успешно завершен!",
-                                                1500
-                                            )
-                                        }
-
-                                    }
-
-                                    "pdf" -> {
-                                        val pdDoc = PDDocument.load(file)
-                                        val stripper = PDFTextStripper()
-                                        val originalText = stripper.getText(pdDoc)
-                                        pdDoc.close()
-
-                                        val translatedText = try {
-                                            translator.translateBlocking(
-                                                originalText,
-                                                Language(lang),
-                                                Language.AUTO
-                                            ).translatedText
-                                        } catch (e: Exception) {
-                                            "Ошибка перевода: ${e.message}"
-                                        }
-
-                                        val newPdf = PDDocument()
-                                        val page = PDPage()
-                                        newPdf.addPage(page)
-
-                                        val fontFile = javaClass.getResourceAsStream("/arialmt.ttf")
-                                        val font = PDType0Font.load(newPdf, fontFile)
-
-                                        PDPageContentStream(newPdf, page).use { stream ->
-                                            stream.beginText()
-                                            stream.setFont(font, 12f)
-                                            stream.newLineAtOffset(50f, 750f)
-                                            translatedText.lines().forEach { line ->
-                                                stream.showText(line)
-                                                stream.newLineAtOffset(0f, -15f)
-                                            }
-                                            stream.endText()
-                                        }
-
-                                        val outPdf =
-                                            File(file.parentFile, "${file.nameWithoutExtension}_translated.pdf")
-                                        newPdf.save(outPdf)
-                                        newPdf.close()
-
-                                        outOpen = outPdf
-
-                                        translationStatus = "PDF переведён и сохранён как ${outPdf.name}"
-                                        scope.launch {
-                                            showCustomNotification(
-                                                "DocumentsTranslate",
-                                                "Перевод успешно завершен!",
-                                                1500
-                                            )
-                                        }
-
-                                    }
-                                }
+                                // Обновление состояния для начала перевода
+                                addViewModel.startTranslation(file, lang)
                             } catch (e: Exception) {
-                                translationStatus = "Ошибка: ${e.message}"
-                                print(e.message)
-                            } finally {
-                                isTranslating = false
-                                translationProgress = 1f
-
+                                addViewModel.addMessage("Ошибка: ${e.message}")
                             }
                         }
                     }
                 },
                 isTranslating = isTranslating,
-                ext = ext
-
+                ext = selectedFile?.extension?.lowercase(Locale.getDefault())
             )
+
+            // Прогресс перевода
             if (isTranslating) {
                 Spacer(modifier = Modifier.height(16.dp))
                 Column(
@@ -505,6 +290,7 @@ fun App() {
                 }
             }
 
+            // Статус перевода
             translationStatus?.let { status ->
                 Spacer(modifier = Modifier.height(16.dp))
                 Text(
@@ -517,66 +303,20 @@ fun App() {
                     Button(
                         onClick = {
                             outOpen?.let { file ->
-                                openFile(file)
+                                addViewModel.openFile(file)
                             } ?: run {
-
                                 println("Файл не найден")
                             }
                         }
                     ) {
                         Text("Открыть файл")
                     }
-                } else {
-
                 }
             }
-
-
         }
     }
 }
 
-fun showCustomNotification(title: String, message: String, durationMillis: Long) {
-    val window = JFrame()
-
-    window.isUndecorated = true
-    window.isAlwaysOnTop = true
-    window.defaultCloseOperation = JFrame.DISPOSE_ON_CLOSE
-
-    val panel = ComposePanel().apply {
-        preferredSize = java.awt.Dimension(300, 100)
-        setContent {
-            NotificationCard(title, message)
-        }
-    }
-
-    window.contentPane = panel
-    window.pack()
-
-    val screenSize = Toolkit.getDefaultToolkit().screenSize
-    val width = 300
-    val height = 100
-    val startY = screenSize.height
-    val endY = screenSize.height - height - 60
-    val x = screenSize.width - width - 30
-
-    window.setLocation(x, startY)
-    window.isVisible = true
-
-    CoroutineScope(Dispatchers.IO).launch {
-        for (y in startY downTo endY step 5) {
-            delay(5)
-            window.setLocation(x, y)
-        }
-        delay(durationMillis)
-        for (y in endY..startY step 5) {
-            delay(5)
-            window.setLocation(x, y)
-        }
-        window.isVisible = false
-        window.dispose()
-    }
-}
 
 @Composable
 fun NotificationCard(title: String, message: String) {
@@ -608,13 +348,7 @@ fun NotificationCard(title: String, message: String) {
 }
 
 
-fun openFile(file: File) {
-    try {
-        java.awt.Desktop.getDesktop().open(file)
-    } catch (e: Exception) {
-        println(" ${e.message}")
-    }
-}
+
 
 
 @OptIn(ExperimentalComposeUiApi::class, ExperimentalMaterial3Api::class)
