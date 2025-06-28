@@ -63,6 +63,11 @@ class AppViewModel : ViewModel() {
         _translatedCells.value = 0
         _outOpen.value = null
     }
+    fun clearFileButton() {
+        _selectedFile.value = null
+
+    }
+
 
     fun addMessage(message: String) {
         _translationStatus.value = message
@@ -160,6 +165,8 @@ class AppViewModel : ViewModel() {
                 1500
             )
         }
+        clearFileButton()
+
 
     }
 
@@ -229,6 +236,7 @@ class AppViewModel : ViewModel() {
                 1500
             )
         }
+        clearFileButton()
     }
 
     private fun translatePdf(file: File, lang: String) {
@@ -279,6 +287,7 @@ class AppViewModel : ViewModel() {
                 1500
             )
         }
+        clearFileButton()
     }
 
     private fun resetTranslationProgress() {
