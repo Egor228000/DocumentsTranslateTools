@@ -33,284 +33,282 @@ import java.util.*
 @Composable
 @Preview
 fun App(addViewModel: AppViewModel) {
-    MaterialTheme {
-        val scope = rememberCoroutineScope()
+    val scope = rememberCoroutineScope()
 
-        // Состояния из ViewModel
-        val selectedFile by addViewModel.selectedFile.collectAsStateWithLifecycle()
-        val translationStatus by addViewModel.translationStatus.collectAsStateWithLifecycle()
-        val isTranslating by addViewModel.isTranslating.collectAsStateWithLifecycle()
-        val translationProgress by addViewModel.translationProgress.collectAsStateWithLifecycle()
-        val totalCells by addViewModel.totalCells.collectAsStateWithLifecycle()
-        val translatedCells by addViewModel.translatedCells.collectAsStateWithLifecycle()
-        val outOpen by addViewModel.outOpen.collectAsStateWithLifecycle()
-        // Состояние языка и поиска
-        var searchQuery by remember { mutableStateOf("") }
-        var expandedLanguage by remember { mutableStateOf(false) }
-        var lang by remember { mutableStateOf("RUSSIAN") }
-        val langList = listOf(
-            "AFRIKAANS",
-            "ALBANIAN",
-            "AMHARIC",
-            "ARABIC",
-            "ARMENIAN",
-            "AZERBAIJANI",
-            "BASQUE",
-            "BELARUSIAN",
-            "BENGALI",
-            "BOSNIAN",
-            "BULGARIAN",
-            "CATALAN",
-            "CEBUANO",
-            "CHICHEWA",
-            "CHINESE_SIMPLIFIED",
-            "CHINESE_TRADITIONAL",
-            "CORSICAN",
-            "CROATIAN",
-            "CZECH",
-            "DANISH",
-            "DUTCH",
-            "ENGLISH",
-            "ESPERANTO",
-            "ESTONIAN",
-            "FILIPINO",
-            "FINNISH",
-            "FRENCH",
-            "FRISIAN",
-            "GALICIAN",
-            "GEORGIAN",
-            "GERMAN",
-            "GREEK",
-            "GUJARATI",
-            "HATIAN_CREOLE",
-            "HAUSA",
-            "HAWAIIAN",
-            "HEBREW_IW",
-            "HEBREW_HE",
-            "HINDI",
-            "HMONG",
-            "HUNGARIAN",
-            "ICELANDIC",
-            "IGBO",
-            "INDONESIAN",
-            "IRISH",
-            "ITALIAN",
-            "JAPANESE",
-            "JAVANESE",
-            "KANNADA",
-            "KAZAKH",
-            "KHMER",
-            "KOREAN",
-            "KURDISH_KURMANJI",
-            "KYRGYZ",
-            "LAO",
-            "LATIN",
-            "LATVIAN",
-            "LITHUANIAN",
-            "LUXEMBOURGISH",
-            "MACEDONIAN",
-            "MALAGASY",
-            "MALAY",
-            "MALAYALAM",
-            "MALTESE",
-            "MAORI",
-            "MARATHI",
-            "MONGOLIAN",
-            "MYANMAR_BURMESE",
-            "NEPALI",
-            "NORWEGIAN",
-            "ODIA",
-            "PASHTO",
-            "PERSIAN",
-            "POLISH",
-            "PORTUGUESE",
-            "PUNJABI",
-            "ROMANIAN",
-            "RUSSIAN",
-            "SAMOAN",
-            "SCOTS_GAELIC",
-            "SERBIAN",
-            "SESOTHO",
-            "SHONA",
-            "SINDHI",
-            "SINHALA",
-            "SLOVAK",
-            "SLOVENIAN",
-            "SOMALI",
-            "SPANISH",
-            "SUDANESE",
-            "SWAHILI",
-            "SWEDISH",
-            "TAJIK",
-            "TAMIL",
-            "TELUGU",
-            "THAI",
-            "TURKISH",
-            "UKRAINIAN",
-            "URDU",
-            "UYGHUR",
-            "UZBEK",
-            "VIETNAMESE",
-            "WELSH",
-            "XHOSA",
-            "YIDDISH",
-            "YORUBA",
-            "ZULU"
-        )
+    // Состояния из ViewModel
+    val selectedFile by addViewModel.selectedFile.collectAsStateWithLifecycle()
+    val translationStatus by addViewModel.translationStatus.collectAsStateWithLifecycle()
+    val isTranslating by addViewModel.isTranslating.collectAsStateWithLifecycle()
+    val translationProgress by addViewModel.translationProgress.collectAsStateWithLifecycle()
+    val totalCells by addViewModel.totalCells.collectAsStateWithLifecycle()
+    val translatedCells by addViewModel.translatedCells.collectAsStateWithLifecycle()
+    val outOpen by addViewModel.outOpen.collectAsStateWithLifecycle()
+    // Состояние языка и поиска
+    var searchQuery by remember { mutableStateOf("") }
+    var expandedLanguage by remember { mutableStateOf(false) }
+    var lang by remember { mutableStateOf("RUSSIAN") }
+    val langList = listOf(
+        "AFRIKAANS",
+        "ALBANIAN",
+        "AMHARIC",
+        "ARABIC",
+        "ARMENIAN",
+        "AZERBAIJANI",
+        "BASQUE",
+        "BELARUSIAN",
+        "BENGALI",
+        "BOSNIAN",
+        "BULGARIAN",
+        "CATALAN",
+        "CEBUANO",
+        "CHICHEWA",
+        "CHINESE_SIMPLIFIED",
+        "CHINESE_TRADITIONAL",
+        "CORSICAN",
+        "CROATIAN",
+        "CZECH",
+        "DANISH",
+        "DUTCH",
+        "ENGLISH",
+        "ESPERANTO",
+        "ESTONIAN",
+        "FILIPINO",
+        "FINNISH",
+        "FRENCH",
+        "FRISIAN",
+        "GALICIAN",
+        "GEORGIAN",
+        "GERMAN",
+        "GREEK",
+        "GUJARATI",
+        "HATIAN_CREOLE",
+        "HAUSA",
+        "HAWAIIAN",
+        "HEBREW_IW",
+        "HEBREW_HE",
+        "HINDI",
+        "HMONG",
+        "HUNGARIAN",
+        "ICELANDIC",
+        "IGBO",
+        "INDONESIAN",
+        "IRISH",
+        "ITALIAN",
+        "JAPANESE",
+        "JAVANESE",
+        "KANNADA",
+        "KAZAKH",
+        "KHMER",
+        "KOREAN",
+        "KURDISH_KURMANJI",
+        "KYRGYZ",
+        "LAO",
+        "LATIN",
+        "LATVIAN",
+        "LITHUANIAN",
+        "LUXEMBOURGISH",
+        "MACEDONIAN",
+        "MALAGASY",
+        "MALAY",
+        "MALAYALAM",
+        "MALTESE",
+        "MAORI",
+        "MARATHI",
+        "MONGOLIAN",
+        "MYANMAR_BURMESE",
+        "NEPALI",
+        "NORWEGIAN",
+        "ODIA",
+        "PASHTO",
+        "PERSIAN",
+        "POLISH",
+        "PORTUGUESE",
+        "PUNJABI",
+        "ROMANIAN",
+        "RUSSIAN",
+        "SAMOAN",
+        "SCOTS_GAELIC",
+        "SERBIAN",
+        "SESOTHO",
+        "SHONA",
+        "SINDHI",
+        "SINHALA",
+        "SLOVAK",
+        "SLOVENIAN",
+        "SOMALI",
+        "SPANISH",
+        "SUDANESE",
+        "SWAHILI",
+        "SWEDISH",
+        "TAJIK",
+        "TAMIL",
+        "TELUGU",
+        "THAI",
+        "TURKISH",
+        "UKRAINIAN",
+        "URDU",
+        "UYGHUR",
+        "UZBEK",
+        "VIETNAMESE",
+        "WELSH",
+        "XHOSA",
+        "YIDDISH",
+        "YORUBA",
+        "ZULU"
+    )
 
-        // UI-компоненты
-        Column(
-            modifier = Modifier
-                .padding(16.dp)
-                .fillMaxSize(),
-            horizontalAlignment = Alignment.CenterHorizontally,
+    // UI-компоненты
+    Column(
+        modifier = Modifier
+            .padding(16.dp)
+            .fillMaxSize(),
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        val filteredLangList = remember(langList, searchQuery) {
+            if (searchQuery.isEmpty()) {
+                langList
+            } else {
+                langList.filter { it.contains(searchQuery, ignoreCase = true) }
+            }
+        }
+
+
+        ExposedDropdownMenuBox(
+            expanded = expandedLanguage,
+            onExpandedChange = { newExpanded ->
+                expandedLanguage = newExpanded
+                searchQuery = ""
+            },
+            modifier = Modifier.fillMaxWidth()
         ) {
-            val filteredLangList = remember(langList, searchQuery) {
-                if (searchQuery.isEmpty()) {
-                    langList
-                } else {
-                    langList.filter { it.contains(searchQuery, ignoreCase = true) }
-                }
-            }
 
-
-            ExposedDropdownMenuBox(
-                expanded = expandedLanguage,
-                onExpandedChange = { newExpanded ->
-                    expandedLanguage = newExpanded
-                    searchQuery = ""
+            OutlinedTextField(
+                value = if (expandedLanguage) searchQuery else lang,
+                onValueChange = { newValue ->
+                    searchQuery = newValue
+                    if (!expandedLanguage) expandedLanguage = true
                 },
-                modifier = Modifier.fillMaxWidth()
-            ) {
-
-                OutlinedTextField(
-                    value = if (expandedLanguage) searchQuery else lang,
-                    onValueChange = { newValue ->
-                        searchQuery = newValue
-                        if (!expandedLanguage) expandedLanguage = true
-                    },
-                    label = { Text("Язык") },
-                    trailingIcon = {
-                        ExposedDropdownMenuDefaults.TrailingIcon(expanded = expandedLanguage)
-                    },
-                    modifier = Modifier
-                        .menuAnchor(ExposedDropdownMenuAnchorType.PrimaryEditable, true)
-                        .fillMaxWidth(),
-                    placeholder = { Text("Начните вводить язык...") },
-                    singleLine = true
-                )
-
-
-                ExposedDropdownMenu(
-                    expanded = expandedLanguage,
-                    onDismissRequest = {
-                        expandedLanguage = false
-                        searchQuery = ""
-                    },
-                    modifier = Modifier.heightIn(max = 300.dp)
-                ) {
-
-                    if (filteredLangList.isEmpty()) {
-                        DropdownMenuItem(
-                            text = { Text("Язык не найден") },
-                            onClick = { /*…*/ },
-                            enabled = false
-                        )
-                    } else {
-
-                        filteredLangList.forEach { option ->
-                            DropdownMenuItem(
-                                text = { Text(option) },
-                                onClick = {
-                                    lang = option
-                                    searchQuery = ""
-                                    expandedLanguage = false
-                                }
-                            )
-                        }
-                    }
-                }
-            }
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            // Загрузка файлов
-            FileDropZone(
-                onFileDropped = { file ->
-                    addViewModel.addFile(file)
-                    addViewModel.addMessage("")
+                label = { Text("Язык") },
+                trailingIcon = {
+                    ExposedDropdownMenuDefaults.TrailingIcon(expanded = expandedLanguage)
                 },
-                onClickClear = {
-                    addViewModel.clearFile()
-                    addViewModel.addMessage("")
-                },
-                selectedFile = selectedFile,
-                onTranslateClick = {
-                    selectedFile?.let { file ->
-                        scope.launch(Dispatchers.IO) {
-                            try {
-                                addViewModel.addBooolean(true)
-                                addViewModel.addMessage("")
-
-                                // Обновление состояния для начала перевода
-                                addViewModel.startTranslation(file, lang)
-                            } catch (e: Exception) {
-                                addViewModel.addMessage("Ошибка: ${e.message}")
-                            }
-                        }
-                    }
-                },
-                isTranslating = isTranslating,
-                ext = selectedFile?.extension?.lowercase(Locale.getDefault())
+                modifier = Modifier
+                    .menuAnchor(ExposedDropdownMenuAnchorType.PrimaryEditable, true)
+                    .fillMaxWidth(),
+                placeholder = { Text("Начните вводить язык...") },
+                singleLine = true
             )
 
-            // Прогресс перевода
-            if (isTranslating) {
-                Spacer(modifier = Modifier.height(16.dp))
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    modifier = Modifier.padding(16.dp)
-                ) {
-                    Text(
-                        text = "Прогресс перевода: ${(translationProgress * 100).toInt()}%",
-                        style = MaterialTheme.typography.bodyLarge
+
+            ExposedDropdownMenu(
+                expanded = expandedLanguage,
+                onDismissRequest = {
+                    expandedLanguage = false
+                    searchQuery = ""
+                },
+                modifier = Modifier.heightIn(max = 300.dp)
+            ) {
+
+                if (filteredLangList.isEmpty()) {
+                    DropdownMenuItem(
+                        text = { Text("Язык не найден") },
+                        onClick = { /*…*/ },
+                        enabled = false
                     )
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Slider(
-                        value = translationProgress,
-                        onValueChange = {},
-                        modifier = Modifier.width(350.dp),
-                        enabled = false,
-                    )
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Text(
-                        text = "Переведено $translatedCells из $totalCells ячеек",
-                        style = MaterialTheme.typography.bodySmall
-                    )
+                } else {
+
+                    filteredLangList.forEach { option ->
+                        DropdownMenuItem(
+                            text = { Text(option) },
+                            onClick = {
+                                lang = option
+                                searchQuery = ""
+                                expandedLanguage = false
+                            }
+                        )
+                    }
                 }
             }
+        }
 
-            // Статус перевода
-            translationStatus?.let { status ->
-                Spacer(modifier = Modifier.height(16.dp))
-                Text(
-                    text = status,
-                    style = MaterialTheme.typography.bodyLarge,
-                    modifier = Modifier.padding(16.dp),
-                    color = if (status.startsWith("Ошибка")) Color.Red else Color.Unspecified
-                )
-                outOpen?.let { file ->
-                    Button(
-                        onClick = {
-                            outOpen?.let { file ->
-                                addViewModel.openFile(file)
-                            } ?: run {
-                                println("Файл не найден")
-                            }
+        Spacer(modifier = Modifier.height(16.dp))
+
+        // Загрузка файлов
+        FileDropZone(
+            onFileDropped = { file ->
+                addViewModel.addFile(file)
+                addViewModel.addMessage("")
+            },
+            onClickClear = {
+                addViewModel.clearFile()
+                addViewModel.addMessage("")
+            },
+            selectedFile = selectedFile,
+            onTranslateClick = {
+                selectedFile?.let { file ->
+                    scope.launch(Dispatchers.IO) {
+                        try {
+                            addViewModel.addBooolean(true)
+                            addViewModel.addMessage("")
+
+                            // Обновление состояния для начала перевода
+                            addViewModel.startTranslation(file, lang)
+                        } catch (e: Exception) {
+                            addViewModel.addMessage("Ошибка: ${e.message}")
                         }
-                    ) {
-                        Text("Открыть файл .${file.extension}")
                     }
+                }
+            },
+            isTranslating = isTranslating,
+            ext = selectedFile?.extension?.lowercase(Locale.getDefault())
+        )
+
+        // Прогресс перевода
+        if (isTranslating) {
+            Spacer(modifier = Modifier.height(16.dp))
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                modifier = Modifier.padding(16.dp)
+            ) {
+                Text(
+                    text = "Прогресс перевода: ${(translationProgress * 100).toInt()}%",
+                    style = MaterialTheme.typography.bodyLarge
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                Slider(
+                    value = translationProgress,
+                    onValueChange = {},
+                    modifier = Modifier.width(350.dp),
+                    enabled = false,
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = "Переведено $translatedCells из $totalCells ячеек",
+                    style = MaterialTheme.typography.bodySmall
+                )
+            }
+        }
+
+        // Статус перевода
+        translationStatus?.let { status ->
+            Spacer(modifier = Modifier.height(16.dp))
+            Text(
+                text = status,
+                style = MaterialTheme.typography.bodyLarge,
+                modifier = Modifier.padding(16.dp),
+                color = if (status.startsWith("Ошибка")) Color.Red else Color.Unspecified
+            )
+            outOpen?.let { file ->
+                Button(
+                    onClick = {
+                        outOpen?.let { file ->
+                            addViewModel.openFile(file)
+                        } ?: run {
+                            println("Файл не найден")
+                        }
+                    }
+                ) {
+                    Text("Открыть файл .${file.extension}")
                 }
             }
         }
@@ -320,7 +318,6 @@ fun App(addViewModel: AppViewModel) {
 
 @Composable
 fun NotificationCard(title: String, message: String) {
-
     Row(
         verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier
@@ -346,9 +343,6 @@ fun NotificationCard(title: String, message: String) {
     }
 
 }
-
-
-
 
 
 @OptIn(ExperimentalComposeUiApi::class, ExperimentalMaterial3Api::class)
