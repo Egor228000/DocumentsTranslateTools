@@ -1,5 +1,6 @@
 package org.example.project
 
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.application
 import exceltranslate.composeapp.generated.resources.Res
@@ -14,6 +15,8 @@ fun main() = application {
         icon = painterResource(Res.drawable.icons)
     ) {
         window.minimumSize = Dimension(900, 700)
-        App()
+        val addViewModel = rememberSaveable { AppViewModel() }
+
+        App(addViewModel)
     }
 }
