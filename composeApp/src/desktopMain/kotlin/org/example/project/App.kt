@@ -333,6 +333,13 @@ fun App() {
                                         outOpen = outputFile
 
                                         translationStatus = "Excel переведён и сохранён как ${outputFile.name}"
+                                        scope.launch {
+                                            showCustomNotification(
+                                                "DocumentsTranslate",
+                                                "Перевод успешно завершен!",
+                                                1500
+                                            )
+                                        }
                                     }
 
                                     in listOf("doc", "docx", "odt") -> {
@@ -395,6 +402,15 @@ fun App() {
 
                                         translationStatus = "Word документ переведён и сохранён как ${outFile.name}"
                                         println("Перевод завершён. Прогресс: 100%")
+
+                                        scope.launch {
+                                            showCustomNotification(
+                                                "DocumentsTranslate",
+                                                "Перевод успешно завершен!",
+                                                1500
+                                            )
+                                        }
+
                                     }
 
                                     "pdf" -> {
@@ -437,7 +453,16 @@ fun App() {
                                         newPdf.close()
 
                                         outOpen = outPdf
+
                                         translationStatus = "PDF переведён и сохранён как ${outPdf.name}"
+                                        scope.launch {
+                                            showCustomNotification(
+                                                "DocumentsTranslate",
+                                                "Перевод успешно завершен!",
+                                                1500
+                                            )
+                                        }
+
                                     }
                                 }
                             } catch (e: Exception) {
@@ -446,6 +471,7 @@ fun App() {
                             } finally {
                                 isTranslating = false
                                 translationProgress = 1f
+
                             }
                         }
                     }
@@ -504,24 +530,7 @@ fun App() {
 
                 }
             }
-            var visible by remember { mutableStateOf(false) }
-            Button(
-                onClick = {
-                    visible = true
-                }
-            ) {
-                Text("asd")
-            }
 
-            if (visible) {
-                showCustomNotification(
-                    "DocumentsTranslate",
-                    "Перевод успешно завершен!",
-                    1500
-                )
-                visible = false
-
-            }
 
         }
     }
@@ -544,7 +553,6 @@ fun showCustomNotification(title: String, message: String, durationMillis: Long)
     window.contentPane = panel
     window.pack()
 
-    // Position bottom right
     val screenSize = Toolkit.getDefaultToolkit().screenSize
     val width = 300
     val height = 100
@@ -552,11 +560,9 @@ fun showCustomNotification(title: String, message: String, durationMillis: Long)
     val endY = screenSize.height - height - 60
     val x = screenSize.width - width - 30
 
-    // Initial off-screen position
     window.setLocation(x, startY)
     window.isVisible = true
 
-    // Slide up animation (optional)
     CoroutineScope(Dispatchers.IO).launch {
         for (y in startY downTo endY step 5) {
             delay(5)
