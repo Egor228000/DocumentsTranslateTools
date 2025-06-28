@@ -5,7 +5,7 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.draganddrop.dragAndDropTarget
 import androidx.compose.foundation.layout.*
-import androidx.compose.material.Button
+import androidx.compose.material3.Button
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -299,7 +299,7 @@ fun App(addViewModel: AppViewModel) {
                     modifier = Modifier.padding(16.dp),
                     color = if (status.startsWith("Ошибка")) Color.Red else Color.Unspecified
                 )
-                if (!isTranslating) {
+                outOpen?.let { file ->
                     Button(
                         onClick = {
                             outOpen?.let { file ->
@@ -309,7 +309,7 @@ fun App(addViewModel: AppViewModel) {
                             }
                         }
                     ) {
-                        Text("Открыть файл")
+                        Text("Открыть файл .${file.extension}")
                     }
                 }
             }
