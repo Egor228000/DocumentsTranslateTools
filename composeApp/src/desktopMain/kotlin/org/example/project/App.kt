@@ -15,6 +15,7 @@ import androidx.compose.ui.draganddrop.DragAndDropEvent
 import androidx.compose.ui.draganddrop.DragAndDropTarget
 import androidx.compose.ui.draganddrop.awtTransferable
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ModifierLocalBeyondBoundsLayout
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -263,6 +264,43 @@ fun App(addViewModel: AppViewModel) {
             ext = selectedFile?.extension?.lowercase(Locale.getDefault())
         )
 
+        var checkClear by remember { mutableStateOf(false) }
+        var checkDublicate by remember { mutableStateOf(false) }
+
+        when (
+            selectedFile?.extension?.lowercase(Locale.getDefault())
+        ) {
+            in listOf("xls", "xlsx", "csv") -> {
+                Column {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Checkbox(
+                            checkClear,
+                            onCheckedChange = {checkClear = it}
+                        )
+                        Text("Удалить пустые строки")
+                    }
+
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically
+
+                    ) {
+                        Checkbox(
+                            checkDublicate,
+                            onCheckedChange = {checkDublicate = it}
+                        )
+                        Text("Удалить дублирующие строки")
+
+                    }
+                }
+
+
+
+            }
+            else -> {}
+        }
+
         // Прогресс перевода
         if (isTranslating) {
             Spacer(modifier = Modifier.height(16.dp))
@@ -390,7 +428,8 @@ fun FileDropZone(
 
     Card(
         modifier = Modifier
-            .size(400.dp)
+            .fillMaxWidth(1f)
+            .height(400.dp)
             .dragAndDropTarget(
                 shouldStartDragAndDrop = { true },
                 target = dropTarget
@@ -398,12 +437,14 @@ fun FileDropZone(
         border = BorderStroke(
             width = if (isHovering) 2.dp else 1.dp,
             color = if (isHovering) Color.Blue else Color.Gray
-        )
-    ) {
+        ),
+
+        ) {
         Box(
             Modifier
                 .fillMaxSize()
-                .background(if (isHovering) Color(0xFFE0E0E0) else Color(0xFFF5F5F5)),
+                .background(if (isHovering) Color(0xFFE0E0E0) else Color(0xFFF5F5F5))
+                .padding(16.dp),
             contentAlignment = Alignment.Center
         ) {
             if (selectedFile == null) {
@@ -412,63 +453,73 @@ fun FileDropZone(
                     textAlign = TextAlign.Center
                 )
             } else {
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.Center,
-                    modifier = Modifier.padding(16.dp)
-                ) {
-                    Image(
-                        painterResource(
-                            when (ext) {
-                                in listOf("xls", "xlsx", "csv") -> {
-                                    Res.drawable.gsheet_document_svgrepo_com
-                                }
-
-                                in listOf("doc", "docx", "odt") -> {
-                                    Res.drawable.word_document_svgrepo_com
-                                }
-
-                                "pdf" -> {
-                                    Res.drawable.pdf_document_svgrepo_com
-                                }
-
-
-                                else -> {}
-                            } as DrawableResource
-                        ),
-                        null,
-                        modifier = Modifier
-                            .size(100.dp)
-                    )
-
-                    Spacer(modifier = Modifier.height(16.dp))
-
-
-                    Text(
-                        text = selectedFile.name,
-                        style = MaterialTheme.typography.titleMedium,
-                        textAlign = TextAlign.Center,
-                        maxLines = 1,
-                        modifier = Modifier.width(300.dp)
-                    )
-
-                    Spacer(modifier = Modifier.height(16.dp))
-
-                    Button(
-                        onClick = onTranslateClick,
-                        modifier = Modifier.fillMaxWidth(1f),
-                        enabled = !isTranslating
+                Column {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.Center,
+                        modifier = Modifier.fillMaxWidth()
                     ) {
-                        Text(if (isTranslating) "Перевод..." else "Начать перевод")
-                    }
-                    if (selectedFile != null) {
-                        Button(
-                            onClick = onClickClear,
-                            enabled = !isTranslating,
-                            modifier = Modifier.fillMaxWidth(1f),
+                        Spacer(modifier = Modifier.padding(vertical = 32.dp))
+                        Image(
+                            painterResource(
+                                when (ext) {
+                                    in listOf("xls", "xlsx", "csv") -> {
+                                        Res.drawable.gsheet_document_svgrepo_com
+                                    }
 
-                            ) {
-                            Text("Очитсить")
+                                    in listOf("doc", "docx", "odt") -> {
+                                        Res.drawable.word_document_svgrepo_com
+                                    }
+
+                                    "pdf" -> {
+                                        Res.drawable.pdf_document_svgrepo_com
+                                    }
+
+
+                                    else -> {}
+                                } as DrawableResource
+                            ),
+                            null,
+                            modifier = Modifier
+                                .size(100.dp)
+                        )
+
+                        Spacer(modifier = Modifier.height(16.dp))
+
+
+                        Text(
+                            text = selectedFile.name,
+                            style = MaterialTheme.typography.titleMedium,
+                            textAlign = TextAlign.Center,
+                            maxLines = 1,
+                            modifier = Modifier.width(300.dp)
+                        )
+
+                        Spacer(modifier = Modifier.height(16.dp))
+                    }
+
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.Bottom,
+                        modifier = Modifier
+                            .fillMaxHeight()
+                    ) {
+                        Button(
+                            onClick = onTranslateClick,
+                            modifier = Modifier.fillMaxWidth(1f),
+                            enabled = !isTranslating
+                        ) {
+                            Text(if (isTranslating) "Перевод..." else "Начать перевод")
+                        }
+                        if (selectedFile != null) {
+                            Button(
+                                onClick = onClickClear,
+                                enabled = !isTranslating,
+                                modifier = Modifier.fillMaxWidth(1f),
+
+                                ) {
+                                Text("Очитсить")
+                            }
                         }
                     }
                 }
