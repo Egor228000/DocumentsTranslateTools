@@ -17,6 +17,8 @@ import org.apache.pdfbox.pdmodel.PDPageContentStream
 import org.apache.pdfbox.pdmodel.font.PDType0Font
 import org.apache.pdfbox.text.PDFTextStripper
 import org.apache.poi.ss.usermodel.CellType
+import org.apache.poi.ss.usermodel.Row
+import org.apache.poi.ss.usermodel.Sheet
 import org.apache.poi.xssf.usermodel.XSSFWorkbook
 import org.apache.poi.xwpf.usermodel.XWPFDocument
 import java.awt.Toolkit
@@ -238,7 +240,39 @@ class AppViewModel : ViewModel() {
         }
         clearFileButton()
     }
+    private fun removeEmptyRows(sheet: Sheet) {
+        val rowsToRemove = mutableListOf<Row>()
 
+        for (row in sheet) {
+            val isEmpty = row.all { it.cellType == CellType.BLANK || it.toString().isBlank() }
+            if (isEmpty) rowsToRemove.add(row)
+        }
+
+        for (row in rowsToRemove) {
+            val rowIndex = row.rowNum
+            sheet.removeRow(row)
+            sheet.shiftRows(rowIndex + 1, sheet.lastRowNum, -1)
+        }
+    }
+    private fun removeDuplicateRows(sheet: Sheet) {
+        val seen = mutableSetOf<String>()
+        val rowsToRemove = mutableListOf<Row>()
+
+        for (row in sheet) {
+            val rowText = row.joinToString(separator = "|") { it.toString().trim() }
+            if (seen.contains(rowText)) {
+                rowsToRemove.add(row)
+            } else {
+                seen.add(rowText)
+            }
+        }
+
+        for (row in rowsToRemove.reversed()) { // important: remove from bottom up
+            val rowIndex = row.rowNum
+            sheet.removeRow(row)
+            sheet.shiftRows(rowIndex + 1, sheet.lastRowNum, -1)
+        }
+    }
     private fun translatePdf(file: File, lang: String) {
         val pdDoc = PDDocument.load(file)
         val stripper = PDFTextStripper()
