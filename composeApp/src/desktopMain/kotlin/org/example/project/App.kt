@@ -44,6 +44,9 @@ fun App(addViewModel: AppViewModel) {
     val totalCells by addViewModel.totalCells.collectAsStateWithLifecycle()
     val translatedCells by addViewModel.translatedCells.collectAsStateWithLifecycle()
     val outOpen by addViewModel.outOpen.collectAsStateWithLifecycle()
+
+    val removeEmpty by addViewModel.removeEmpty.collectAsStateWithLifecycle()
+    val removeDuplicates by addViewModel.removeDuplicates.collectAsStateWithLifecycle()
     // Состояние языка и поиска
     var searchQuery by remember { mutableStateOf("") }
     var expandedLanguage by remember { mutableStateOf(false) }
@@ -157,7 +160,8 @@ fun App(addViewModel: AppViewModel) {
         "YORUBA",
         "ZULU"
     )
-
+    var checkClear by remember { mutableStateOf(false) }
+    var checkDublicate by remember { mutableStateOf(false) }
     // UI-компоненты
     Column(
         modifier = Modifier
@@ -253,7 +257,10 @@ fun App(addViewModel: AppViewModel) {
                             addViewModel.addMessage("")
 
                             // Обновление состояния для начала перевода
-                            addViewModel.startTranslation(file, lang)
+                            addViewModel.startTranslation(
+                                file = file,
+                                lang = lang,       // откуда берёте язык
+                            )
                         } catch (e: Exception) {
                             addViewModel.addMessage("Ошибка: ${e.message}")
                         }
@@ -264,8 +271,7 @@ fun App(addViewModel: AppViewModel) {
             ext = selectedFile?.extension?.lowercase(Locale.getDefault())
         )
 
-        var checkClear by remember { mutableStateOf(false) }
-        var checkDublicate by remember { mutableStateOf(false) }
+
 
         when (
             selectedFile?.extension?.lowercase(Locale.getDefault())
@@ -275,10 +281,7 @@ fun App(addViewModel: AppViewModel) {
                     Row(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Checkbox(
-                            checkClear,
-                            onCheckedChange = {checkClear = it}
-                        )
+                        Checkbox(removeEmpty, onCheckedChange = addViewModel::setRemoveEmpty)
                         Text("Удалить пустые строки")
                     }
 
@@ -286,10 +289,7 @@ fun App(addViewModel: AppViewModel) {
                         verticalAlignment = Alignment.CenterVertically
 
                     ) {
-                        Checkbox(
-                            checkDublicate,
-                            onCheckedChange = {checkDublicate = it}
-                        )
+                        Checkbox(removeDuplicates, onCheckedChange = addViewModel::setRemoveDuplicates)
                         Text("Удалить дублирующие строки")
 
                     }
