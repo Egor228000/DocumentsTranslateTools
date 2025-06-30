@@ -62,10 +62,10 @@ compose.desktop {
 
             targetFormats(TargetFormat.Exe, TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb)
             packageName = "DocumentTools"
-            packageVersion = "1.0.2"
+            packageVersion = "1.0.3"
             windows {
-                packageVersion = "1.0.2"
-                exePackageVersion = "1.0.2"
+                packageVersion = "1.0.3"
+                exePackageVersion = "1.0.3"
             }
             includeAllModules = true
 
