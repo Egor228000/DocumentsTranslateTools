@@ -119,17 +119,23 @@ class AppViewModel : ViewModel() {
         removeEmpty: Boolean,
         removeDuplicates: Boolean
     ) {
-        viewModelScope.launch(Dispatchers.IO) {
-            // 1. Открыли один Workbook
-            val workbook = XSSFWorkbook(file.inputStream())
-            val sheet = workbook.getSheetAt(0)
+        viewModelScope.launch {
+            val workbook = withContext(Dispatchers.IO) {
+                XSSFWorkbook(file.inputStream()).apply {
+                    val sheet = getSheetAt(0)
+                    if (removeEmpty)      removeEmptyRows(sheet)
+                    if (removeDuplicates) removeDuplicateRows(sheet)
+                }
+            }
 
-            // 2. Очистили
-            if (removeEmpty)      removeEmptyRows(sheet)
-            if (removeDuplicates) removeDuplicateRows(sheet)
+            translateExcel(
+                sheet        = workbook.getSheetAt(0),
+                originalFile = file,
+                lang         = lang
+            )
 
-            // 3. Перевели уже очищенный sheet
-            translateExcel(sheet, workbook, file, lang)
+            _isTranslating.value = false
+            clearFileButton()
         }
     }
 
@@ -137,7 +143,6 @@ class AppViewModel : ViewModel() {
         val rowsToRemove = mutableListOf<Int>()
         val lastRow = sheet.lastRowNum
 
-        // Собираем индексы пустых строк
         for (i in 0..lastRow) {
             val row = sheet.getRow(i)
             val isEmpty = when {
@@ -156,14 +161,12 @@ class AppViewModel : ViewModel() {
             if (isEmpty) rowsToRemove.add(i)
         }
 
-        // Удаляем снизу вверх только через shiftRows
         rowsToRemove
             .sortedDescending()
             .forEach { idx ->
                 if (idx < sheet.lastRowNum) {
                     sheet.shiftRows(idx + 1, sheet.lastRowNum, -1)
                 } else {
-                    // если это последний ряд, просто удалим объект строки
                     sheet.getRow(idx)?.let(sheet::removeRow)
                 }
             }
@@ -200,7 +203,6 @@ class AppViewModel : ViewModel() {
     }
     private fun translateExcel(
         sheet: Sheet,
-        workbook: Workbook,
         originalFile: File,
         lang: String
     ) {

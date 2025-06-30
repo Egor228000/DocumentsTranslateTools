@@ -272,34 +272,38 @@ fun App(addViewModel: AppViewModel) {
         )
 
 
+        if (!isTranslating) {
+            when (
+                selectedFile?.extension?.lowercase(Locale.getDefault())
+            ) {
+                in listOf("xls", "xlsx", "csv") -> {
+                    Column {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Checkbox(removeEmpty, onCheckedChange = addViewModel::setRemoveEmpty)
+                            Text("Удалить пустые строки")
+                        }
 
-        when (
-            selectedFile?.extension?.lowercase(Locale.getDefault())
-        ) {
-            in listOf("xls", "xlsx", "csv") -> {
-                Column {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Checkbox(removeEmpty, onCheckedChange = addViewModel::setRemoveEmpty)
-                        Text("Удалить пустые строки")
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically
+
+                        ) {
+                            Checkbox(removeDuplicates, onCheckedChange = addViewModel::setRemoveDuplicates)
+                            Text("Удалить дублирующие строки")
+
+                        }
                     }
 
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically
 
-                    ) {
-                        Checkbox(removeDuplicates, onCheckedChange = addViewModel::setRemoveDuplicates)
-                        Text("Удалить дублирующие строки")
 
-                    }
                 }
-
-
-
+                else -> {}
             }
-            else -> {}
+        } else {
+
         }
+
 
         // Прогресс перевода
         if (isTranslating) {
