@@ -17,6 +17,7 @@ kotlin {
         val desktopMain by getting
 
         commonMain.dependencies {
+
             implementation("org.apache.pdfbox:pdfbox:2.0.28")
             implementation("org.apache.poi:poi:4.1.2")
             implementation("org.apache.poi:poi-ooxml:4.1.2")
@@ -51,7 +52,7 @@ kotlin {
 }
 
 
-compose.desktop {
+compose.desktop { // колораского жука
 
     application {
         mainClass = "org.example.project.MainKt"
@@ -61,13 +62,14 @@ compose.desktop {
 
             targetFormats(TargetFormat.Exe, TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb)
             packageName = "DocumentTools"
-            packageVersion = "1.0.1"
+            packageVersion = "1.0.2"
             windows {
-                packageVersion = "1.0.1"
-                exePackageVersion = "1.0.1"
-                iconFile.set(project.file("composeResources/drawable/icons.ico"))
+                packageVersion = "1.0.2"
+                exePackageVersion = "1.0.2"
             }
             includeAllModules = true
+
+
         }
 
         buildTypes.release.proguard {

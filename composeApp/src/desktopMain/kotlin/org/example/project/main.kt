@@ -14,9 +14,8 @@ fun main() = application {
         title = "ExcelTranslate",
         icon = painterResource(Res.drawable.icons)
     ) {
-        window.minimumSize = Dimension(900, 700)
+        window.minimumSize = Dimension(500, 700)
         val addViewModel = rememberSaveable { AppViewModel() }
-
-        App(addViewModel)
+            App(addViewModel)
     }
 }
