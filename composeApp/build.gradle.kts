@@ -66,6 +66,7 @@ compose.desktop {
             windows {
                 packageVersion = "1.0.3"
                 exePackageVersion = "1.0.3"
+                iconFile.set(project.file("src/desktopMain/composeResources/drawable/app_icons.ico"))
             }
             includeAllModules = true
 
