@@ -9,6 +9,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import me.bush.translator.Language
 import me.bush.translator.Translator
 import org.apache.pdfbox.pdmodel.PDDocument
@@ -19,6 +20,7 @@ import org.apache.pdfbox.text.PDFTextStripper
 import org.apache.poi.ss.usermodel.CellType
 import org.apache.poi.ss.usermodel.Row
 import org.apache.poi.ss.usermodel.Sheet
+import org.apache.poi.ss.usermodel.Workbook
 import org.apache.poi.xssf.usermodel.XSSFWorkbook
 import org.apache.poi.xwpf.usermodel.XWPFDocument
 import java.awt.Toolkit
@@ -55,7 +57,19 @@ class AppViewModel : ViewModel() {
     private val _outOpen = MutableStateFlow<File?>(null)
     val outOpen: StateFlow<File?> = _outOpen
 
+    private val _removeEmpty = MutableStateFlow(false)
+    val removeEmpty: StateFlow<Boolean> = _removeEmpty
 
+    private val _removeDuplicates = MutableStateFlow(false)
+    val removeDuplicates: StateFlow<Boolean> = _removeDuplicates
+
+    fun setRemoveEmpty(value: Boolean) {
+        _removeEmpty.value = value
+    }
+
+    fun setRemoveDuplicates(value: Boolean) {
+        _removeDuplicates.value = value
+    }
     fun clearFile() {
         _selectedFile.value = null
         _translationStatus.value = null
@@ -87,7 +101,7 @@ class AppViewModel : ViewModel() {
 
                 val ext = file.extension.lowercase()
                 when (ext) {
-                    in listOf("xls", "xlsx", "csv") -> translateExcel(file, lang)
+                    in listOf("xls", "xlsx", "csv") ->  processExcel(file, lang, removeEmpty.value, removeDuplicates.value)
                     in listOf("doc", "docx", "odt") -> translateWord(file, lang)
                     "pdf" -> translatePdf(file, lang)
                     else -> addMessage("Unsupported file format")
@@ -99,65 +113,150 @@ class AppViewModel : ViewModel() {
             }
         }
     }
+    fun processExcel(
+        file: File,
+        lang: String,
+        removeEmpty: Boolean,
+        removeDuplicates: Boolean
+    ) {
+        viewModelScope.launch(Dispatchers.IO) {
+            // 1. Открыли один Workbook
+            val workbook = XSSFWorkbook(file.inputStream())
+            val sheet = workbook.getSheetAt(0)
 
-    private fun translateExcel(file: File, lang: String) {
-        // Excel
-        val workbook = XSSFWorkbook(file.inputStream())
-        val sheet = workbook.getSheetAt(0)
+            // 2. Очистили
+            if (removeEmpty)      removeEmptyRows(sheet)
+            if (removeDuplicates) removeDuplicateRows(sheet)
 
-        for (rowNum in 0..sheet.lastRowNum) {
-            val row = sheet.getRow(rowNum) ?: continue
-            for (cellNum in 0 until row.lastCellNum) {
-                val cell = row.getCell(cellNum) ?: continue
-                if (cell.cellType == CellType.STRING && cell.stringCellValue.isNotBlank()) {
-                    _totalCells.value++
+            // 3. Перевели уже очищенный sheet
+            translateExcel(sheet, workbook, file, lang)
+        }
+    }
+
+    private fun removeEmptyRows(sheet: Sheet) {
+        val rowsToRemove = mutableListOf<Int>()
+        val lastRow = sheet.lastRowNum
+
+        // Собираем индексы пустых строк
+        for (i in 0..lastRow) {
+            val row = sheet.getRow(i)
+            val isEmpty = when {
+                row == null -> true
+                row.physicalNumberOfCells == 0 -> true
+                else -> {
+                    val first = row.firstCellNum.takeIf { it >= 0 } ?: 0
+                    val last  = row.lastCellNum.takeIf { it >= 0 } ?: -1
+                    (first..last).all { ci ->
+                        row.getCell(ci)?.let {
+                            it.cellType == CellType.BLANK || it.toString().trim().isEmpty()
+                        } ?: true
+                    }
                 }
+            }
+            if (isEmpty) rowsToRemove.add(i)
+        }
+
+        // Удаляем снизу вверх только через shiftRows
+        rowsToRemove
+            .sortedDescending()
+            .forEach { idx ->
+                if (idx < sheet.lastRowNum) {
+                    sheet.shiftRows(idx + 1, sheet.lastRowNum, -1)
+                } else {
+                    // если это последний ряд, просто удалим объект строки
+                    sheet.getRow(idx)?.let(sheet::removeRow)
+                }
+            }
+    }
+
+    private fun removeDuplicateRows(sheet: Sheet) {
+        val seen = mutableSetOf<String>()
+        val rowsToRemove = mutableListOf<Int>()
+        val lastRow = sheet.lastRowNum
+
+        for (i in 0..lastRow) {
+            val row = sheet.getRow(i) ?: continue
+            val first = row.firstCellNum.takeIf { it >= 0 } ?: 0
+            val last  = row.lastCellNum.takeIf { it >= 0 } ?: -1
+
+            val rowText = (first..last).joinToString("|") { ci ->
+                row.getCell(ci)?.toString()?.trim() ?: ""
+            }
+
+            if (!seen.add(rowText)) {
+                rowsToRemove.add(i)
             }
         }
 
+        rowsToRemove
+            .sortedDescending()
+            .forEach { idx ->
+                if (idx < sheet.lastRowNum) {
+                    sheet.shiftRows(idx + 1, sheet.lastRowNum, -1)
+                } else {
+                    sheet.getRow(idx)?.let(sheet::removeRow)
+                }
+            }
+    }
+    private fun translateExcel(
+        sheet: Sheet,
+        workbook: Workbook,
+        originalFile: File,
+        lang: String
+    ) {
+        // считаем totalCells
+        _totalCells.value = 0
+        for (row in sheet) {
+            for (ci in 0 until row.lastCellNum) {
+                row.getCell(ci)?.takeIf {
+                    it.cellType == CellType.STRING && it.stringCellValue.isNotBlank()
+                }?.let { _totalCells.value++ }
+            }
+        }
+
+        // создаём лист для перевода
         val translatedWorkbook = XSSFWorkbook()
         val translatedSheet = translatedWorkbook.createSheet("Перевод")
 
         for (rowNum in 0..sheet.lastRowNum) {
             val row = sheet.getRow(rowNum) ?: continue
-            val translatedRow = translatedSheet.createRow(rowNum)
+            val tRow = translatedSheet.createRow(rowNum)
 
-            for (cellNum in 0 until row.lastCellNum) {
-                val cell = row.getCell(cellNum) ?: continue
-                val translatedCell = translatedRow.createCell(cellNum)
+            for (ci in 0 until row.lastCellNum) {
+                val cell = row.getCell(ci) ?: continue
+                val tCell = tRow.createCell(ci)
 
                 if (cell.cellType == CellType.STRING && cell.stringCellValue.isNotBlank()) {
-                    val text = cell.stringCellValue
                     val translation = try {
                         translator.translateBlocking(
-                            text,
+                            cell.stringCellValue,
                             Language(lang),
                             Language.AUTO
                         )
                     } catch (e: Exception) {
                         null
                     }
-                    translatedCell.setCellValue(
-                        translation?.translatedText
-                            ?: "Ошибка перевода"
-                    )
+                    tCell.setCellValue(translation?.translatedText ?: "Ошибка перевода")
                     _translatedCells.value++
-                    _translationProgress.value = _translatedCells.value.toFloat() / _totalCells.value
+                    _translationProgress.value =
+                        _translatedCells.value.toFloat() / _totalCells.value
                 } else {
                     when (cell.cellType) {
-                        CellType.NUMERIC -> translatedCell.setCellValue(cell.numericCellValue)
-                        CellType.BOOLEAN -> translatedCell.setCellValue(cell.booleanCellValue)
-                        else -> translatedCell.setCellValue(cell.toString())
+                        CellType.NUMERIC -> tCell.setCellValue(cell.numericCellValue)
+                        CellType.BOOLEAN -> tCell.setCellValue(cell.booleanCellValue)
+                        else             -> tCell.setCellValue(cell.toString())
                     }
                 }
             }
         }
 
-        val outputFile =
-            File(file.parentFile, "${file.nameWithoutExtension}_translated.xlsx")
+        // 4. Сохраняем результат
+        val outputFile = File(originalFile.parentFile,
+            "${originalFile.nameWithoutExtension}_processed.xlsx")
         FileOutputStream(outputFile).use { fos ->
             translatedWorkbook.write(fos)
         }
+
         addMessage("Excel переведён и сохранён как ${outputFile.name}")
         _outOpen.value = outputFile
         viewModelScope.launch {
@@ -240,39 +339,7 @@ class AppViewModel : ViewModel() {
         }
         clearFileButton()
     }
-    private fun removeEmptyRows(sheet: Sheet) {
-        val rowsToRemove = mutableListOf<Row>()
 
-        for (row in sheet) {
-            val isEmpty = row.all { it.cellType == CellType.BLANK || it.toString().isBlank() }
-            if (isEmpty) rowsToRemove.add(row)
-        }
-
-        for (row in rowsToRemove) {
-            val rowIndex = row.rowNum
-            sheet.removeRow(row)
-            sheet.shiftRows(rowIndex + 1, sheet.lastRowNum, -1)
-        }
-    }
-    private fun removeDuplicateRows(sheet: Sheet) {
-        val seen = mutableSetOf<String>()
-        val rowsToRemove = mutableListOf<Row>()
-
-        for (row in sheet) {
-            val rowText = row.joinToString(separator = "|") { it.toString().trim() }
-            if (seen.contains(rowText)) {
-                rowsToRemove.add(row)
-            } else {
-                seen.add(rowText)
-            }
-        }
-
-        for (row in rowsToRemove.reversed()) { // important: remove from bottom up
-            val rowIndex = row.rowNum
-            sheet.removeRow(row)
-            sheet.shiftRows(rowIndex + 1, sheet.lastRowNum, -1)
-        }
-    }
     private fun translatePdf(file: File, lang: String) {
         val pdDoc = PDDocument.load(file)
         val stripper = PDFTextStripper()
