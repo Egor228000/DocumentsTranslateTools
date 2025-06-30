@@ -113,31 +113,27 @@ class AppViewModel : ViewModel() {
             }
         }
     }
-    fun processExcel(
+    suspend fun processExcel(
         file: File,
         lang: String,
         removeEmpty: Boolean,
         removeDuplicates: Boolean
     ) {
-        viewModelScope.launch {
-            val workbook = withContext(Dispatchers.IO) {
-                XSSFWorkbook(file.inputStream()).apply {
-                    val sheet = getSheetAt(0)
-                    if (removeEmpty)      removeEmptyRows(sheet)
-                    if (removeDuplicates) removeDuplicateRows(sheet)
-                }
+        // полностью в IO
+        withContext(Dispatchers.IO) {
+            val workbook = XSSFWorkbook(file.inputStream()).apply {
+                val sheet = getSheetAt(0)
+                if (removeEmpty)      removeEmptyRows(sheet)
+                if (removeDuplicates) removeDuplicateRows(sheet)
             }
-
-            translateExcel(
-                sheet        = workbook.getSheetAt(0),
-                originalFile = file,
-                lang         = lang
-            )
-
-            _isTranslating.value = false
+            translateExcel(workbook.getSheetAt(0), file, lang)
+        }
+        // после IO возвращаемся в Main и сбрасываем выбор файла
+        withContext(Dispatchers.Main) {
             clearFileButton()
         }
     }
+
 
     private fun removeEmptyRows(sheet: Sheet) {
         val rowsToRemove = mutableListOf<Int>()
