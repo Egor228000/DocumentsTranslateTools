@@ -1,24 +1,30 @@
+import org.gradle.kotlin.dsl.commonMain
+import org.gradle.kotlin.dsl.commonTest
 import org.jetbrains.compose.desktop.application.dsl.TargetFormat
 
 plugins {
     alias(libs.plugins.kotlinMultiplatform)
     alias(libs.plugins.composeMultiplatform)
     alias(libs.plugins.composeHotReload)
-
     alias(libs.plugins.composeCompiler)
 
 }
 
 kotlin {
 
-    jvm("desktop")
+    jvm("desktop") {
+        compilerOptions {
+            freeCompilerArgs.add("-Xcontext-parameters")
+        }
+    }
+
     sourceSets {
 
         val desktopMain by getting
 
         commonMain.dependencies {
             implementation(libs.jbr)
-
+            implementation("com.bybutter.compose:compose-jetbrains-expui-theme:2.0.0")
             implementation("org.apache.pdfbox:pdfbox:2.0.28")
             implementation("org.apache.poi:poi:4.1.2")
             implementation("org.apache.poi:poi-ooxml:4.1.2")
@@ -38,13 +44,16 @@ kotlin {
             implementation(compose.components.uiToolingPreview)
             implementation(libs.androidx.lifecycle.viewmodel)
             implementation(libs.androidx.lifecycle.runtimeCompose)
+
+            implementation(compose.desktop.currentOs)
+
         }
         commonTest.dependencies {
             implementation(libs.kotlin.test)
         }
+
         desktopMain.dependencies {
 
-            implementation(compose.desktop.currentOs)
             implementation(libs.kotlinx.coroutinesSwing)
         }
 
@@ -69,11 +78,17 @@ compose.desktop {
                 exePackageVersion = "1.0.3"
                 iconFile.set(project.file("src/desktopMain/composeResources/drawable/icons.ico"))
             }
+            linux {
+                packageVersion = "1.0.3"
+                debPackageVersion = "1.0.3"
+            }
             includeAllModules = true
 
 
         }
-
+        nativeDistributions {
+            modules("jdk.unsupported")
+        }
         buildTypes.release.proguard {
             optimize.set(false)
         }
