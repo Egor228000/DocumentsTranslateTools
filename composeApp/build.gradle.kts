@@ -17,6 +17,7 @@ kotlin {
         val desktopMain by getting
 
         commonMain.dependencies {
+            implementation(libs.jbr)
 
             implementation("org.apache.pdfbox:pdfbox:2.0.28")
             implementation("org.apache.poi:poi:4.1.2")
@@ -66,7 +67,7 @@ compose.desktop {
             windows {
                 packageVersion = "1.0.3"
                 exePackageVersion = "1.0.3"
-                iconFile.set(project.file("src/desktopMain/composeResources/drawable/app_icons.ico"))
+                iconFile.set(project.file("src/desktopMain/composeResources/drawable/icons.ico"))
             }
             includeAllModules = true
 
