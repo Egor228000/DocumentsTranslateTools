@@ -17,8 +17,8 @@ kotlin {
         val desktopMain by getting
 
         commonMain.dependencies {
+            implementation("com.mayakapps.compose:window-styler:0.3.3-SNAPSHOT")
             implementation(libs.jbr)
-
             implementation("org.apache.pdfbox:pdfbox:2.0.28")
             implementation("org.apache.poi:poi:4.1.2")
             implementation("org.apache.poi:poi-ooxml:4.1.2")
