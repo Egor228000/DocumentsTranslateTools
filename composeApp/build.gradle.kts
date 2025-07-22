@@ -4,7 +4,6 @@ plugins {
     alias(libs.plugins.kotlinMultiplatform)
     alias(libs.plugins.composeMultiplatform)
     alias(libs.plugins.composeHotReload)
-
     alias(libs.plugins.composeCompiler)
 
 }
@@ -12,13 +11,14 @@ plugins {
 kotlin {
 
     jvm("desktop")
+
     sourceSets {
 
         val desktopMain by getting
 
         commonMain.dependencies {
+            implementation("com.mayakapps.compose:window-styler:0.3.3-SNAPSHOT")
             implementation(libs.jbr)
-
             implementation("org.apache.pdfbox:pdfbox:2.0.28")
             implementation("org.apache.poi:poi:4.1.2")
             implementation("org.apache.poi:poi-ooxml:4.1.2")
@@ -38,13 +38,16 @@ kotlin {
             implementation(compose.components.uiToolingPreview)
             implementation(libs.androidx.lifecycle.viewmodel)
             implementation(libs.androidx.lifecycle.runtimeCompose)
+
+            implementation(compose.desktop.currentOs)
+
         }
         commonTest.dependencies {
             implementation(libs.kotlin.test)
         }
+
         desktopMain.dependencies {
 
-            implementation(compose.desktop.currentOs)
             implementation(libs.kotlinx.coroutinesSwing)
         }
 
@@ -63,17 +66,19 @@ compose.desktop {
 
             targetFormats(TargetFormat.Exe, TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb)
             packageName = "DocumentTools"
-            packageVersion = "1.0.3"
+            packageVersion = "1.0.5"
             windows {
-                packageVersion = "1.0.3"
-                exePackageVersion = "1.0.3"
+                packageVersion = "1.0.5"
+                exePackageVersion = "1.0.5"
                 iconFile.set(project.file("src/desktopMain/composeResources/drawable/icons.ico"))
             }
             includeAllModules = true
 
 
         }
-
+        nativeDistributions {
+            modules("jdk.unsupported")
+        }
         buildTypes.release.proguard {
             optimize.set(false)
         }
