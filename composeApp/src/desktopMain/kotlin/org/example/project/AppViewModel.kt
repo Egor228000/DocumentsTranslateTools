@@ -32,7 +32,6 @@ import java.io.FileOutputStream
 import javax.swing.JFrame
 
 class AppViewModel : ViewModel() {
-    // Используем ваш текущий Translator (который вы упомянули в предыдущем коде)
     private val translator = Translator()
 
     private val _selectedFile = MutableStateFlow<File?>(null)
@@ -57,7 +56,7 @@ class AppViewModel : ViewModel() {
         _selectedFile.value = file
     }
 
-    // Переменная для хранения переведенного файла
+  
     private val _outOpen = MutableStateFlow<File?>(null)
     val outOpen: StateFlow<File?> = _outOpen
 
@@ -132,7 +131,7 @@ class AppViewModel : ViewModel() {
         removeEmpty: Boolean,
         removeDuplicates: Boolean,
     ) {
-        // полностью в IO
+       
         withContext(Dispatchers.IO) {
             val workbook = XSSFWorkbook(file.inputStream()).apply {
                 val sheet = getSheetAt(0)
@@ -211,7 +210,7 @@ class AppViewModel : ViewModel() {
     }
 
     private suspend fun translateExcel(sheet: Sheet, originalFile: File, lang: String) {
-        val textsToTranslate = mutableListOf<Pair<Int, Int>>() // (row, col)
+        val textsToTranslate = mutableListOf<Pair<Int, Int>>() 
         val uniqueTexts = mutableSetOf<String>()
         val translations = mutableMapOf<String, String>()
 
@@ -305,7 +304,7 @@ class AppViewModel : ViewModel() {
                 }
                 p.runs.forEach { run -> run.setText(tr?.translatedText ?: original, 0) }
                 _translationProgress.value =
-                    _translatedCells.value.toFloat() / _totalCells.value  // Обновляем прогресс
+                    _translatedCells.value.toFloat() / _totalCells.value  
 
                 println("Перевод параграфа: ${(_translationProgress.value * 100).toInt()}%")
             }
@@ -342,7 +341,7 @@ class AppViewModel : ViewModel() {
         doc.close()
 
         addMessage("Word документ переведён и сохранён как ${outFile.name}")
-        _outOpen.value = outFile  // Сохранить путь к переведенному файлу
+        _outOpen.value = outFile 
         viewModelScope.launch {
             showCustomNotification(
                 "DocumentsTranslate",
@@ -393,7 +392,7 @@ class AppViewModel : ViewModel() {
         newPdf.close()
 
         addMessage("PDF переведён и сохранён как ${outPdf.name}")
-        _outOpen.value = outPdf  // Сохранить путь к переведенному файлу
+        _outOpen.value = outPdf  
         viewModelScope.launch {
             showCustomNotification(
                 "DocumentsTranslate",

@@ -36,7 +36,6 @@ import java.util.*
 fun App(addViewModel: AppViewModel) {
     val scope = rememberCoroutineScope()
 
-    // Состояния из ViewModel
     val selectedFile by addViewModel.selectedFile.collectAsStateWithLifecycle()
     val translationStatus by addViewModel.translationStatus.collectAsStateWithLifecycle()
     val isTranslating by addViewModel.isTranslating.collectAsStateWithLifecycle()
@@ -162,7 +161,6 @@ fun App(addViewModel: AppViewModel) {
     )
     var checkClear by remember { mutableStateOf(false) }
     var checkDublicate by remember { mutableStateOf(false) }
-    // UI-компоненты
     Column(
         modifier = Modifier
             .padding(16.dp)
@@ -238,7 +236,6 @@ fun App(addViewModel: AppViewModel) {
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // Загрузка файлов
         FileDropZone(
             onFileDropped = { file ->
                 addViewModel.addFile(file)
@@ -256,10 +253,9 @@ fun App(addViewModel: AppViewModel) {
                             addViewModel.addBooolean(true)
                             addViewModel.addMessage("")
 
-                            // Обновление состояния для начала перевода
                             addViewModel.startTranslation(
                                 file = file,
-                                lang = lang,       // откуда берёте язык
+                                lang = lang,      
                             )
                         } catch (e: Exception) {
                             addViewModel.addMessage("Ошибка: ${e.message}")
@@ -305,7 +301,6 @@ fun App(addViewModel: AppViewModel) {
         }
 
 
-        // Прогресс перевода
         if (isTranslating) {
             Spacer(modifier = Modifier.height(16.dp))
             Column(
@@ -331,7 +326,6 @@ fun App(addViewModel: AppViewModel) {
             }
         }
 
-        // Статус перевода
         translationStatus?.let { status ->
             Spacer(modifier = Modifier.height(16.dp))
             Text(
@@ -529,7 +523,6 @@ fun FileDropZone(
                 }
             }
         }
-
 
     }
 }
