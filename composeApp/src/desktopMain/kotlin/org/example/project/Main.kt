@@ -1,6 +1,7 @@
 package org.example.project
 
 import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.application
 import com.mayakapps.compose.windowstyler.WindowBackdrop
