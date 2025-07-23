@@ -12,6 +12,7 @@ plugins {
 kotlin {
 
     jvm("desktop")
+
     sourceSets {
 
         val desktopMain by getting
@@ -51,7 +52,21 @@ kotlin {
     }
 
 }
+tasks.withType<Jar> {
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
 
+    exclude(
+        "META-INF/LICENSE.md",
+        "META-INF/LICENSE.txt",
+        "META-INF/LICENSE-LGPL-2.1.txt",
+        "META-INF/LICENSE-LGPL-3.txt",
+        "META-INF/NOTICE.txt",
+        "META-INF/DEPENDENCIES",
+        "META-INF/ASL2.0",
+        "META-INF/NOTICE.md",
+        "META-INF/LICENSE-W3C-TEST"
+    )
+}
 
 compose.desktop {
 
@@ -61,7 +76,7 @@ compose.desktop {
         nativeDistributions {
             modules("java.sql")
 
-            targetFormats(TargetFormat.Exe, TargetFormat.Deb)
+            targetFormats(TargetFormat.Exe,  TargetFormat.Deb)
             packageName = "DocumentTools"
             packageVersion = "1.0.5"
             windows {
@@ -81,7 +96,9 @@ compose.desktop {
         }
 
         buildTypes.release.proguard {
-            optimize.set(false)
+            isEnabled.set(false)
+            optimize.set(true)
+            obfuscate.set(false)
         }
     }
 
