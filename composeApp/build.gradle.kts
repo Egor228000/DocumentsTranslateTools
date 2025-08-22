@@ -87,11 +87,9 @@ compose.desktop {
             linux {
                 packageVersion = "1.0.5"
                 debPackageVersion = "1.0.5"
-                iconFile.set(project.file("src/desktopMain/composeResources/drawable/icons.ico"))
+                iconFile.set(project.file("src/desktopMain/composeResources/drawable/icon.png"))
 
             }
-            includeAllModules = true
-
 
         }
 
