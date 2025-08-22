@@ -76,12 +76,13 @@ compose.desktop {
         nativeDistributions {
             modules("java.sql")
 
-            targetFormats(TargetFormat.Exe,  TargetFormat.Deb)
+            targetFormats(TargetFormat.Exe, TargetFormat.Msi,  TargetFormat.Deb)
             packageName = "DocumentTools"
             packageVersion = "1.0.5"
             windows {
                 packageVersion = "1.0.5"
                 exePackageVersion = "1.0.5"
+                msiPackageVersion = "1.0.5"
                 iconFile.set(project.file("src/desktopMain/composeResources/drawable/icons.ico"))
             }
             linux {
