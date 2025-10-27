@@ -11,6 +11,7 @@ import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import me.bush.translator.Language
@@ -35,22 +36,22 @@ class AppViewModel : ViewModel() {
     private val translator = Translator()
 
     private val _selectedFile = MutableStateFlow<File?>(null)
-    val selectedFile: StateFlow<File?> = _selectedFile
+    val selectedFile: StateFlow<File?> = _selectedFile.asStateFlow()
 
     private val _translationStatus = MutableStateFlow<String?>(null)
-    val translationStatus: StateFlow<String?> = _translationStatus
+    val translationStatus: StateFlow<String?> = _translationStatus.asStateFlow()
 
     private val _isTranslating = MutableStateFlow(false)
-    val isTranslating: StateFlow<Boolean> = _isTranslating
+    val isTranslating: StateFlow<Boolean> = _isTranslating.asStateFlow()
 
     private val _translationProgress = MutableStateFlow(0f)
-    val translationProgress: StateFlow<Float> = _translationProgress
+    val translationProgress: StateFlow<Float> = _translationProgress.asStateFlow()
 
     private val _totalCells = MutableStateFlow(0)
-    val totalCells: StateFlow<Int> = _totalCells
+    val totalCells: StateFlow<Int> = _totalCells.asStateFlow()
 
     private val _translatedCells = MutableStateFlow(0)
-    val translatedCells: StateFlow<Int> = _translatedCells
+    val translatedCells: StateFlow<Int> = _translatedCells.asStateFlow()
 
     fun addFile(file: File) {
         _selectedFile.value = file
@@ -58,13 +59,13 @@ class AppViewModel : ViewModel() {
 
   
     private val _outOpen = MutableStateFlow<File?>(null)
-    val outOpen: StateFlow<File?> = _outOpen
+    val outOpen: StateFlow<File?> = _outOpen.asStateFlow()
 
     private val _removeEmpty = MutableStateFlow(false)
-    val removeEmpty: StateFlow<Boolean> = _removeEmpty
+    val removeEmpty: StateFlow<Boolean> = _removeEmpty.asStateFlow()
 
     private val _removeDuplicates = MutableStateFlow(false)
-    val removeDuplicates: StateFlow<Boolean> = _removeDuplicates
+    val removeDuplicates: StateFlow<Boolean> = _removeDuplicates.asStateFlow()
 
     fun setRemoveEmpty(value: Boolean) {
         _removeEmpty.value = value
