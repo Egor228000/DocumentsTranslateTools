@@ -18,7 +18,9 @@ kotlin {
         val desktopMain by getting
 
         commonMain.dependencies {
-            implementation("com.mayakapps.compose:window-styler:0.3.3-SNAPSHOT")
+
+            implementation(libs.platformtools.core)
+            implementation(libs.platformtools.darkmodedetector)
             implementation(libs.jbr)
             implementation("org.apache.pdfbox:pdfbox:2.0.28")
             implementation("org.apache.poi:poi:4.1.2")
@@ -27,8 +29,6 @@ kotlin {
             implementation("javax.xml.bind:jaxb-api:2.3.1")
             implementation("org.glassfish.jaxb:jaxb-runtime:2.3.3")
 
-            // Для Ant (если нужно)
-            implementation("org.apache.ant:ant:1.10.12")
 
             implementation("com.github.therealbush:translator:1.1.1")
             implementation(compose.runtime)
