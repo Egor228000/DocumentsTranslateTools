@@ -22,7 +22,6 @@ import org.apache.pdfbox.pdmodel.PDPageContentStream
 import org.apache.pdfbox.pdmodel.font.PDType0Font
 import org.apache.pdfbox.text.PDFTextStripper
 import org.apache.poi.ss.usermodel.CellType
-import org.apache.poi.ss.usermodel.Row
 import org.apache.poi.ss.usermodel.Sheet
 import org.apache.poi.ss.usermodel.Workbook
 import org.apache.poi.xssf.usermodel.XSSFWorkbook
@@ -53,11 +52,6 @@ class AppViewModel : ViewModel() {
     private val _translatedCells = MutableStateFlow(0)
     val translatedCells: StateFlow<Int> = _translatedCells.asStateFlow()
 
-    fun addFile(file: File) {
-        _selectedFile.value = file
-    }
-
-  
     private val _outOpen = MutableStateFlow<File?>(null)
     val outOpen: StateFlow<File?> = _outOpen.asStateFlow()
 
@@ -66,6 +60,17 @@ class AppViewModel : ViewModel() {
 
     private val _removeDuplicates = MutableStateFlow(false)
     val removeDuplicates: StateFlow<Boolean> = _removeDuplicates.asStateFlow()
+
+    private val _targetLanguage = MutableStateFlow("RUSSIAN")
+    val targetLanguage: StateFlow<String> = _targetLanguage.asStateFlow()
+
+    fun setTargetLanguage(language: String) {
+        _targetLanguage.value = language
+    }
+
+    fun addFile(file: File) {
+        _selectedFile.value = file
+    }
 
     fun setRemoveEmpty(value: Boolean) {
         _removeEmpty.value = value
@@ -85,54 +90,50 @@ class AppViewModel : ViewModel() {
         _outOpen.value = null
     }
 
-    fun clearFileButton() {
+    fun clearSelectedFile() {
         _selectedFile.value = null
-
     }
 
-
-    fun addMessage(message: String) {
+    fun setTranslationStatus(message: String?) {
         _translationStatus.value = message
     }
 
-    fun addBooolean(isTranslating: Boolean) {
+    fun setTranslating(isTranslating: Boolean) {
         _isTranslating.value = isTranslating
     }
 
-    fun startTranslation(file: File, lang: String) {
+    fun startTranslation(file: File) {
         viewModelScope.launch(Dispatchers.IO) {
             try {
                 resetTranslationProgress()
-                _isTranslating.value = true
+                setTranslating(true)
 
                 val ext = file.extension.lowercase()
                 when (ext) {
-                    in listOf("xls", "xlsx", "csv") -> processExcel(
+                    in EXCEL_EXTENSIONS -> processExcel(
                         file,
-                        lang,
+                        targetLanguage.value,
                         removeEmpty.value,
                         removeDuplicates.value
                     )
-
-                    in listOf("doc", "docx", "odt") -> translateWord(file, lang)
-                    "pdf" -> translatePdf(file, lang)
-                    else -> addMessage("Unsupported file format")
+                    in WORD_EXTENSIONS -> translateWord(file, targetLanguage.value)
+                    "pdf" -> translatePdf(file, targetLanguage.value)
+                    else -> setTranslationStatus("Unsupported file format")
                 }
             } catch (e: Exception) {
-                addMessage("Error: ${e.message}")
+                setTranslationStatus("Error: ${e.message}")
             } finally {
-                _isTranslating.value = false
+                setTranslating(false)
             }
         }
     }
 
-    suspend fun processExcel(
+    private suspend fun processExcel(
         file: File,
         lang: String,
         removeEmpty: Boolean,
         removeDuplicates: Boolean,
     ) {
-       
         withContext(Dispatchers.IO) {
             val workbook = XSSFWorkbook(file.inputStream()).apply {
                 val sheet = getSheetAt(0)
@@ -142,10 +143,9 @@ class AppViewModel : ViewModel() {
             translateExcel(workbook.getSheetAt(0), file, lang)
         }
         withContext(Dispatchers.Main) {
-            clearFileButton()
+            clearSelectedFile()
         }
     }
-
 
     private fun removeEmptyRows(sheet: Sheet) {
         val rowsToRemove = mutableListOf<Int>()
@@ -211,22 +211,19 @@ class AppViewModel : ViewModel() {
     }
 
     private suspend fun translateExcel(sheet: Sheet, originalFile: File, lang: String) {
-        val textsToTranslate = mutableListOf<Pair<Int, Int>>() 
         val uniqueTexts = mutableSetOf<String>()
-        val translations = mutableMapOf<String, String>()
-
         for (rowNum in 0..sheet.lastRowNum) {
             val row = sheet.getRow(rowNum) ?: continue
             for (ci in 0 until row.lastCellNum) {
                 val cell = row.getCell(ci) ?: continue
                 if (cell.cellType == CellType.STRING && cell.stringCellValue.isNotBlank()) {
-                    textsToTranslate += rowNum to ci
                     uniqueTexts += cell.stringCellValue
                 }
             }
         }
 
         _totalCells.value = uniqueTexts.size
+        val translations = mutableMapOf<String, String>()
 
         coroutineScope {
             uniqueTexts.chunked(10).forEach { chunk ->
@@ -237,20 +234,18 @@ class AppViewModel : ViewModel() {
                         } catch (e: Exception) {
                             null
                         }
-                        text to (result?.translatedText ?: "Ошибка перевода")
+                        text to (result?.translatedText ?: "Translation Error")
                     }
                 }.awaitAll().forEach { (original, translated) ->
                     translations[original] = translated
-
                     _translatedCells.value++
-                    _translationProgress.value =
-                        _translatedCells.value.toFloat() / _totalCells.value
+                    _translationProgress.value = _translatedCells.value.toFloat() / _totalCells.value
                 }
             }
         }
 
         val translatedWorkbook = XSSFWorkbook()
-        val translatedSheet = translatedWorkbook.createSheet("Перевод")
+        val translatedSheet = translatedWorkbook.createSheet("Translated")
 
         for (rowNum in 0..sheet.lastRowNum) {
             val row = sheet.getRow(rowNum) ?: continue
@@ -261,8 +256,7 @@ class AppViewModel : ViewModel() {
                 val tCell = tRow.createCell(ci)
 
                 if (cell.cellType == CellType.STRING && cell.stringCellValue.isNotBlank()) {
-                    val translated = translations[cell.stringCellValue]
-                    tCell.setCellValue(translated ?: "Ошибка перевода")
+                    tCell.setCellValue(translations[cell.stringCellValue] ?: "Translation Error")
                 } else {
                     when (cell.cellType) {
                         CellType.NUMERIC -> tCell.setCellValue(cell.numericCellValue)
@@ -277,80 +271,56 @@ class AppViewModel : ViewModel() {
         FileOutputStream(outputFile).use { fos -> translatedWorkbook.write(fos) }
 
         withContext(Dispatchers.Main) {
-            addMessage("Excel переведён и сохранён как ${outputFile.name}")
+            setTranslationStatus("Excel translated and saved as ${outputFile.name}")
             _outOpen.value = outputFile
-            showCustomNotification("DocumentsTranslate", "Перевод успешно завершен!", 1500)
-            clearFileButton()
+            showCustomNotification("DocumentsTranslate", "Translation successful!", 1500)
+            clearSelectedFile()
         }
     }
 
-
     private fun translateWord(file: File, lang: String) {
         val doc = XWPFDocument(file.inputStream())
+        val paragraphs = doc.paragraphs
+        _totalCells.value = paragraphs.size + doc.tables.sumOf { it.rows.size }
+        _translatedCells.value = 0
 
-        doc.paragraphs.forEach { p ->
-            _totalCells.value++
-
+        paragraphs.forEach { p ->
             val original = p.text
             if (original.isNotBlank()) {
                 val tr = try {
-                    _translatedCells.value++
-                    translator.translateBlocking(
-                        original,
-                        Language(lang),
-                        Language.AUTO
-                    )
-                } catch (e: Exception) {
-                    null
-                }
-                p.runs.forEach { run -> run.setText(tr?.translatedText ?: original, 0) }
-                _translationProgress.value =
-                    _translatedCells.value.toFloat() / _totalCells.value  
-
-                println("Перевод параграфа: ${(_translationProgress.value * 100).toInt()}%")
+                    translator.translateBlocking(original, Language(lang), Language.AUTO)
+                } catch (e: Exception) { null }
+                p.runs.forEach { it.setText(tr?.translatedText ?: original, 0) }
             }
+            _translatedCells.value++
+            _translationProgress.value = _translatedCells.value.toFloat() / _totalCells.value
         }
 
         doc.tables.forEach { table ->
             table.rows.forEach { row ->
                 row.tableCells.forEach { cell ->
-                    _totalCells.value++
-
                     val original = cell.text
                     if (original.isNotBlank()) {
                         val tr = try {
-                            translator.translateBlocking(
-                                original,
-                                Language(lang),
-                                Language.AUTO
-                            )
-                        } catch (e: Exception) {
-                            null
-                        }
+                            translator.translateBlocking(original, Language(lang), Language.AUTO)
+                        } catch (e: Exception) { null }
                         cell.removeParagraph(0)
                         cell.setText(tr?.translatedText ?: original)
                     }
                 }
+                _translatedCells.value++
+                _translationProgress.value = _translatedCells.value.toFloat() / _totalCells.value
             }
         }
 
-        val outFile =
-            File(file.parentFile, "${file.nameWithoutExtension}_translated.docx")
-        FileOutputStream(outFile).use { fos ->
-            doc.write(fos)
-        }
+        val outFile = File(file.parentFile, "${file.nameWithoutExtension}_translated.docx")
+        FileOutputStream(outFile).use { fos -> doc.write(fos) }
         doc.close()
 
-        addMessage("Word документ переведён и сохранён как ${outFile.name}")
-        _outOpen.value = outFile 
-        viewModelScope.launch {
-            showCustomNotification(
-                "DocumentsTranslate",
-                "Перевод успешно завершен!",
-                1500
-            )
-        }
-        clearFileButton()
+        setTranslationStatus("Word document translated and saved as ${outFile.name}")
+        _outOpen.value = outFile
+        viewModelScope.launch { showCustomNotification("DocumentsTranslate", "Translation successful!", 1500) }
+        clearSelectedFile()
     }
 
     private fun translatePdf(file: File, lang: String) {
@@ -359,14 +329,20 @@ class AppViewModel : ViewModel() {
         val originalText = stripper.getText(pdDoc)
         pdDoc.close()
 
-        val translatedText = try {
-            translator.translateBlocking(
-                originalText,
-                Language(lang),
-                Language.AUTO
-            ).translatedText
-        } catch (e: Exception) {
-            "Ошибка перевода: ${e.message}"
+        _totalCells.value = originalText.lines().count { it.isNotBlank() }
+        _translatedCells.value = 0
+
+        val translatedText = originalText.lines().joinToString("\n") { line ->
+            if (line.isNotBlank()) {
+                val translated = try {
+                    translator.translateBlocking(line, Language(lang), Language.AUTO).translatedText
+                } catch (e: Exception) { "Translation Error" }
+                _translatedCells.value++
+                _translationProgress.value = _translatedCells.value.toFloat() / _totalCells.value
+                translated
+            } else {
+                line
+            }
         }
 
         val newPdf = PDDocument()
@@ -379,29 +355,23 @@ class AppViewModel : ViewModel() {
         PDPageContentStream(newPdf, page).use { stream ->
             stream.beginText()
             stream.setFont(font, 12f)
+            stream.setLeading(14.5f)
             stream.newLineAtOffset(50f, 750f)
             translatedText.lines().forEach { line ->
                 stream.showText(line)
-                stream.newLineAtOffset(0f, -15f)
+                stream.newLine()
             }
             stream.endText()
         }
 
-        val outPdf =
-            File(file.parentFile, "${file.nameWithoutExtension}_translated.pdf")
+        val outPdf = File(file.parentFile, "${file.nameWithoutExtension}_translated.pdf")
         newPdf.save(outPdf)
         newPdf.close()
 
-        addMessage("PDF переведён и сохранён как ${outPdf.name}")
-        _outOpen.value = outPdf  
-        viewModelScope.launch {
-            showCustomNotification(
-                "DocumentsTranslate",
-                "Перевод успешно завершен!",
-                1500
-            )
-        }
-        clearFileButton()
+        setTranslationStatus("PDF translated and saved as ${outPdf.name}")
+        _outOpen.value = outPdf
+        viewModelScope.launch { showCustomNotification("DocumentsTranslate", "Translation successful!", 1500) }
+        clearSelectedFile()
     }
 
     private fun resetTranslationProgress() {
@@ -410,10 +380,8 @@ class AppViewModel : ViewModel() {
         _totalCells.value = 0
     }
 
-
     fun showCustomNotification(title: String, message: String, durationMillis: Long) {
         val window = JFrame()
-
         window.isUndecorated = true
         window.isAlwaysOnTop = true
         window.defaultCloseOperation = JFrame.DISPOSE_ON_CLOSE
@@ -429,8 +397,7 @@ class AppViewModel : ViewModel() {
         window.pack()
 
         val screenSize = Toolkit.getDefaultToolkit().screenSize
-        val width = 300
-        val height = 100
+        val (width, height) = 300 to 100
         val startY = screenSize.height
         val endY = screenSize.height - height - 60
         val x = screenSize.width - width - 30
@@ -459,5 +426,30 @@ class AppViewModel : ViewModel() {
         } catch (e: Exception) {
             println("Error opening file: ${e.message}")
         }
+    }
+
+    companion object {
+        val SUPPORTED_LANGUAGES = listOf(
+            "AFRIKAANS", "ALBANIAN", "AMHARIC", "ARABIC", "ARMENIAN", "AZERBAIJANI", "BASQUE",
+            "BELARUSIAN", "BENGALI", "BOSNIAN", "BULGARIAN", "CATALAN", "CEBUANO", "CHICHEWA",
+            "CHINESE_SIMPLIFIED", "CHINESE_TRADITIONAL", "CORSICAN", "CROATIAN", "CZECH", "DANISH",
+            "DUTCH", "ENGLISH", "ESPERANTO", "ESTONIAN", "FILIPINO", "FINNISH", "FRENCH", "FRISIAN",
+            "GALICIAN", "GEORGIAN", "GERMAN", "GREEK", "GUJARATI", "HATIAN_CREOLE", "HAUSA",
+            "HAWAIIAN", "HEBREW_IW", "HEBREW_HE", "HINDI", "HMONG", "HUNGARIAN", "ICELANDIC", "IGBO",
+            "INDONESIAN", "IRISH", "ITALIAN", "JAPANESE", "JAVANESE", "KANNADA", "KAZAKH", "KHMER",
+            "KOREAN", "KURDISH_KURMANJI", "KYRGYZ", "LAO", "LATIN", "LATVIAN", "LITHUANIAN",
+            "LUXEMBOURGISH", "MACEDONIAN", "MALAGASY", "MALAY", "MALAYALAM", "MALTESE", "MAORI",
+            "MARATHI", "MONGOLIAN", "MYANMAR_BURMESE", "NEPALI", "NORWEGIAN", "ODIA", "PASHTO",
+            "PERSIAN", "POLISH", "PORTUGUESE", "PUNJABI", "ROMANIAN", "RUSSIAN", "SAMOAN",
+            "SCOTS_GAELIC", "SERBIAN", "SESOTHO", "SHONA", "SINDHI", "SINHALA", "SLOVAK", "SLOVENIAN",
+            "SOMALI", "SPANISH", "SUDANESE", "SWAHILI", "SWEDISH", "TAJIK", "TAMIL", "TELUGU", "THAI",
+            "TURKISH", "UKRAINIAN", "URDU", "UYGHUR", "UZBEK", "VIETNAMESE", "WELSH", "XHOSA",
+            "YIDDISH", "YORUBA", "ZULU"
+        )
+
+        val EXCEL_EXTENSIONS = listOf("xls", "xlsx", "csv")
+        val WORD_EXTENSIONS = listOf("doc", "docx", "odt")
+        val PDF_EXTENSIONS = listOf("pdf")
+        val SUPPORTED_EXTENSIONS = EXCEL_EXTENSIONS + WORD_EXTENSIONS + PDF_EXTENSIONS
     }
 }

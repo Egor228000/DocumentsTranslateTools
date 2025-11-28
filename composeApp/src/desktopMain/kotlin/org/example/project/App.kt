@@ -20,379 +20,235 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import exceltranslate.composeapp.generated.resources.*
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
+import org.example.project.AppViewModel.Companion.EXCEL_EXTENSIONS
+import org.example.project.AppViewModel.Companion.PDF_EXTENSIONS
+import org.example.project.AppViewModel.Companion.SUPPORTED_EXTENSIONS
+import org.example.project.AppViewModel.Companion.SUPPORTED_LANGUAGES
+import org.example.project.AppViewModel.Companion.WORD_EXTENSIONS
 import org.jetbrains.compose.resources.DrawableResource
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.ui.tooling.preview.Preview
 import java.awt.datatransfer.DataFlavor
 import java.io.File
-import java.util.*
-
-
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 @Preview
-fun App(addViewModel: AppViewModel) {
-    val scope = rememberCoroutineScope()
+fun App(viewModel: AppViewModel) {
+    val selectedFile by viewModel.selectedFile.collectAsStateWithLifecycle()
+    val translationStatus by viewModel.translationStatus.collectAsStateWithLifecycle()
+    val isTranslating by viewModel.isTranslating.collectAsStateWithLifecycle()
+    val translationProgress by viewModel.translationProgress.collectAsStateWithLifecycle()
+    val totalCells by viewModel.totalCells.collectAsStateWithLifecycle()
+    val translatedCells by viewModel.translatedCells.collectAsStateWithLifecycle()
+    val outOpen by viewModel.outOpen.collectAsStateWithLifecycle()
+    val removeEmpty by viewModel.removeEmpty.collectAsStateWithLifecycle()
+    val removeDuplicates by viewModel.removeDuplicates.collectAsStateWithLifecycle()
+    val targetLanguage by viewModel.targetLanguage.collectAsStateWithLifecycle()
 
-    val selectedFile by addViewModel.selectedFile.collectAsStateWithLifecycle()
-    val translationStatus by addViewModel.translationStatus.collectAsStateWithLifecycle()
-    val isTranslating by addViewModel.isTranslating.collectAsStateWithLifecycle()
-    val translationProgress by addViewModel.translationProgress.collectAsStateWithLifecycle()
-    val totalCells by addViewModel.totalCells.collectAsStateWithLifecycle()
-    val translatedCells by addViewModel.translatedCells.collectAsStateWithLifecycle()
-    val outOpen by addViewModel.outOpen.collectAsStateWithLifecycle()
-
-    val removeEmpty by addViewModel.removeEmpty.collectAsStateWithLifecycle()
-    val removeDuplicates by addViewModel.removeDuplicates.collectAsStateWithLifecycle()
-    // Состояние языка и поиска
     var searchQuery by remember { mutableStateOf("") }
     var expandedLanguage by remember { mutableStateOf(false) }
-    var lang by remember { mutableStateOf("RUSSIAN") }
-    val langList = listOf(
-        "AFRIKAANS",
-        "ALBANIAN",
-        "AMHARIC",
-        "ARABIC",
-        "ARMENIAN",
-        "AZERBAIJANI",
-        "BASQUE",
-        "BELARUSIAN",
-        "BENGALI",
-        "BOSNIAN",
-        "BULGARIAN",
-        "CATALAN",
-        "CEBUANO",
-        "CHICHEWA",
-        "CHINESE_SIMPLIFIED",
-        "CHINESE_TRADITIONAL",
-        "CORSICAN",
-        "CROATIAN",
-        "CZECH",
-        "DANISH",
-        "DUTCH",
-        "ENGLISH",
-        "ESPERANTO",
-        "ESTONIAN",
-        "FILIPINO",
-        "FINNISH",
-        "FRENCH",
-        "FRISIAN",
-        "GALICIAN",
-        "GEORGIAN",
-        "GERMAN",
-        "GREEK",
-        "GUJARATI",
-        "HATIAN_CREOLE",
-        "HAUSA",
-        "HAWAIIAN",
-        "HEBREW_IW",
-        "HEBREW_HE",
-        "HINDI",
-        "HMONG",
-        "HUNGARIAN",
-        "ICELANDIC",
-        "IGBO",
-        "INDONESIAN",
-        "IRISH",
-        "ITALIAN",
-        "JAPANESE",
-        "JAVANESE",
-        "KANNADA",
-        "KAZAKH",
-        "KHMER",
-        "KOREAN",
-        "KURDISH_KURMANJI",
-        "KYRGYZ",
-        "LAO",
-        "LATIN",
-        "LATVIAN",
-        "LITHUANIAN",
-        "LUXEMBOURGISH",
-        "MACEDONIAN",
-        "MALAGASY",
-        "MALAY",
-        "MALAYALAM",
-        "MALTESE",
-        "MAORI",
-        "MARATHI",
-        "MONGOLIAN",
-        "MYANMAR_BURMESE",
-        "NEPALI",
-        "NORWEGIAN",
-        "ODIA",
-        "PASHTO",
-        "PERSIAN",
-        "POLISH",
-        "PORTUGUESE",
-        "PUNJABI",
-        "ROMANIAN",
-        "RUSSIAN",
-        "SAMOAN",
-        "SCOTS_GAELIC",
-        "SERBIAN",
-        "SESOTHO",
-        "SHONA",
-        "SINDHI",
-        "SINHALA",
-        "SLOVAK",
-        "SLOVENIAN",
-        "SOMALI",
-        "SPANISH",
-        "SUDANESE",
-        "SWAHILI",
-        "SWEDISH",
-        "TAJIK",
-        "TAMIL",
-        "TELUGU",
-        "THAI",
-        "TURKISH",
-        "UKRAINIAN",
-        "URDU",
-        "UYGHUR",
-        "UZBEK",
-        "VIETNAMESE",
-        "WELSH",
-        "XHOSA",
-        "YIDDISH",
-        "YORUBA",
-        "ZULU"
-    )
-    var checkClear by remember { mutableStateOf(false) }
-    var checkDublicate by remember { mutableStateOf(false) }
+
     Column(
-        modifier = Modifier
-            .padding(16.dp)
-            .fillMaxSize(),
+        modifier = Modifier.padding(16.dp).fillMaxSize(),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        val filteredLangList = remember(langList, searchQuery) {
-            if (searchQuery.isEmpty()) {
-                langList
-            } else {
-                langList.filter { it.contains(searchQuery, ignoreCase = true) }
-            }
-        }
-
-
-        ExposedDropdownMenuBox(
+        LanguageSelector(
             expanded = expandedLanguage,
-            onExpandedChange = { newExpanded ->
-                expandedLanguage = newExpanded
+            onExpandedChange = { expandedLanguage = it },
+            searchQuery = searchQuery,
+            onSearchQueryChange = { searchQuery = it },
+            targetLanguage = targetLanguage,
+            onLanguageSelected = {
+                viewModel.setTargetLanguage(it)
+                expandedLanguage = false
                 searchQuery = ""
-            },
-            modifier = Modifier.fillMaxWidth()
-        ) {
-
-            OutlinedTextField(
-                value = if (expandedLanguage) searchQuery else lang,
-                onValueChange = { newValue ->
-                    searchQuery = newValue
-                    if (!expandedLanguage) expandedLanguage = true
-                },
-                label = { Text("Язык") },
-                trailingIcon = {
-                    ExposedDropdownMenuDefaults.TrailingIcon(expanded = expandedLanguage)
-                },
-                modifier = Modifier
-                    .menuAnchor(ExposedDropdownMenuAnchorType.PrimaryEditable, true)
-                    .fillMaxWidth(),
-                placeholder = { Text("Начните вводить язык...") },
-                singleLine = true
-            )
-
-
-            ExposedDropdownMenu(
-                expanded = expandedLanguage,
-                onDismissRequest = {
-                    expandedLanguage = false
-                    searchQuery = ""
-                },
-                modifier = Modifier.heightIn(max = 300.dp)
-            ) {
-
-                if (filteredLangList.isEmpty()) {
-                    DropdownMenuItem(
-                        text = { Text("Язык не найден") },
-                        onClick = { /*…*/ },
-                        enabled = false
-                    )
-                } else {
-
-                    filteredLangList.forEach { option ->
-                        DropdownMenuItem(
-                            text = { Text(option) },
-                            onClick = {
-                                lang = option
-                                searchQuery = ""
-                                expandedLanguage = false
-                            }
-                        )
-                    }
-                }
             }
-        }
+        )
 
         Spacer(modifier = Modifier.height(16.dp))
 
         FileDropZone(
             onFileDropped = { file ->
-                addViewModel.addFile(file)
-                addViewModel.addMessage("")
+                viewModel.addFile(file)
+                viewModel.setTranslationStatus(null)
             },
             onClickClear = {
-                addViewModel.clearFile()
-                addViewModel.addMessage("")
+                viewModel.clearFile()
             },
             selectedFile = selectedFile,
             onTranslateClick = {
-                selectedFile?.let { file ->
-                    scope.launch(Dispatchers.IO) {
-                        try {
-                            addViewModel.addBooolean(true)
-                            addViewModel.addMessage("")
-
-                            addViewModel.startTranslation(
-                                file = file,
-                                lang = lang,      
-                            )
-                        } catch (e: Exception) {
-                            addViewModel.addMessage("Ошибка: ${e.message}")
-                        }
-                    }
-                }
+                selectedFile?.let { viewModel.startTranslation(it) }
             },
-            isTranslating = isTranslating,
-            ext = selectedFile?.extension?.lowercase(Locale.getDefault())
+            isTranslating = isTranslating
         )
 
-
-        if (!isTranslating) {
-            when (
-                selectedFile?.extension?.lowercase(Locale.getDefault())
-            ) {
-                in listOf("xls", "xlsx", "csv") -> {
-                    Column {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Checkbox(removeEmpty, onCheckedChange = addViewModel::setRemoveEmpty)
-                            Text("Удалить пустые строки")
-                        }
-
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically
-
-                        ) {
-                            Checkbox(removeDuplicates, onCheckedChange = addViewModel::setRemoveDuplicates)
-                            Text("Удалить дублирующие строки")
-
-                        }
-                    }
-
-
-
-                }
-                else -> {}
-            }
-        } else {
-
+        if (!isTranslating && selectedFile?.extension?.lowercase() in EXCEL_EXTENSIONS) {
+            ExcelOptions(
+                removeEmpty = removeEmpty,
+                onRemoveEmptyChange = viewModel::setRemoveEmpty,
+                removeDuplicates = removeDuplicates,
+                onRemoveDuplicatesChange = viewModel::setRemoveDuplicates
+            )
         }
 
-
         if (isTranslating) {
-            Spacer(modifier = Modifier.height(16.dp))
-            Column(
-                horizontalAlignment = Alignment.CenterHorizontally,
-                modifier = Modifier.padding(16.dp)
-            ) {
-                Text(
-                    text = "Прогресс перевода: ${(translationProgress * 100).toInt()}%",
-                    style = MaterialTheme.typography.bodyLarge
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-                Slider(
-                    value = translationProgress,
-                    onValueChange = {},
-                    modifier = Modifier.width(350.dp),
-                    enabled = false,
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-                Text(
-                    text = "Переведено $translatedCells из $totalCells ячеек",
-                    style = MaterialTheme.typography.bodySmall
-                )
-            }
+            TranslationProgress(
+                translationProgress = translationProgress,
+                translatedCells = translatedCells,
+                totalCells = totalCells
+            )
         }
 
         translationStatus?.let { status ->
-            Spacer(modifier = Modifier.height(16.dp))
-            Text(
-                text = status,
-                style = MaterialTheme.typography.bodyLarge,
-                modifier = Modifier.padding(16.dp),
-                color = if (status.startsWith("Ошибка")) Color.Red else Color.Unspecified
+            TranslationStatus(
+                status = status,
+                outFile = outOpen,
+                onOpenFile = { file -> viewModel.openFile(file) }
             )
-            outOpen?.let { file ->
-                Button(
-                    onClick = {
-                        outOpen?.let { file ->
-                            addViewModel.openFile(file)
-                        } ?: run {
-                            println("Файл не найден")
-                        }
-                    }
-                ) {
-                    Text("Открыть файл .${file.extension}")
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun LanguageSelector(
+    expanded: Boolean,
+    onExpandedChange: (Boolean) -> Unit,
+    searchQuery: String,
+    onSearchQueryChange: (String) -> Unit,
+    targetLanguage: String,
+    onLanguageSelected: (String) -> Unit
+) {
+    val filteredLangList = remember(SUPPORTED_LANGUAGES, searchQuery) {
+        if (searchQuery.isEmpty()) {
+            SUPPORTED_LANGUAGES
+        } else {
+            SUPPORTED_LANGUAGES.filter { it.contains(searchQuery, ignoreCase = true) }
+        }
+    }
+
+    ExposedDropdownMenuBox(
+        expanded = expanded,
+        onExpandedChange = {
+            onExpandedChange(it)
+            if (!it) onSearchQueryChange("")
+        },
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        OutlinedTextField(
+            value = if (expanded) searchQuery else targetLanguage,
+            onValueChange = {
+                onSearchQueryChange(it)
+                if (!expanded) onExpandedChange(true)
+            },
+            label = { Text("Language") },
+            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
+            modifier = Modifier.menuAnchor(ExposedDropdownMenuAnchorType.PrimaryEditable, true).fillMaxWidth(),
+            placeholder = { Text("Search language...") },
+            singleLine = true
+        )
+
+        ExposedDropdownMenu(
+            expanded = expanded,
+            onDismissRequest = { onExpandedChange(false) },
+            modifier = Modifier.heightIn(max = 300.dp)
+        ) {
+            if (filteredLangList.isEmpty()) {
+                DropdownMenuItem(
+                    text = { Text("No language found") },
+                    onClick = {},
+                    enabled = false
+                )
+            } else {
+                filteredLangList.forEach { option ->
+                    DropdownMenuItem(
+                        text = { Text(option) },
+                        onClick = { onLanguageSelected(option) }
+                    )
                 }
             }
         }
     }
 }
 
-
 @Composable
-fun NotificationCard(title: String, message: String) {
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-        modifier = Modifier
-            .fillMaxSize()
-            .background(Color(0xFF1E1E1E))
-            .padding(16.dp)
-
-
-    ) {
-        Image(
-            painterResource(Res.drawable.icons),
-            null,
-            modifier = Modifier.size(48.dp)
-        )
-        Spacer(modifier = Modifier.padding(start = 16.dp))
-
-        Column(
-        ) {
-            Text(title, color = Color.White, fontSize = 16.sp)
-            Spacer(modifier = Modifier.height(4.dp))
-            Text(message, color = Color.LightGray, fontSize = 14.sp)
+fun ExcelOptions(
+    removeEmpty: Boolean,
+    onRemoveEmptyChange: (Boolean) -> Unit,
+    removeDuplicates: Boolean,
+    onRemoveDuplicatesChange: (Boolean) -> Unit
+) {
+    Column {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Checkbox(removeEmpty, onCheckedChange = onRemoveEmptyChange)
+            Text("Remove empty rows")
+        }
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Checkbox(removeDuplicates, onCheckedChange = onRemoveDuplicatesChange)
+            Text("Remove duplicate rows")
         }
     }
-
 }
 
+@Composable
+fun TranslationProgress(
+    translationProgress: Float,
+    translatedCells: Int,
+    totalCells: Int
+) {
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        modifier = Modifier.padding(16.dp)
+    ) {
+        Text(
+            text = "Translation progress: ${(translationProgress * 100).toInt()}%",
+            style = MaterialTheme.typography.bodyLarge
+        )
+        Spacer(modifier = Modifier.height(8.dp))
+        Slider(
+            value = translationProgress,
+            onValueChange = {},
+            modifier = Modifier.width(350.dp),
+            enabled = false,
+        )
+        Spacer(modifier = Modifier.height(8.dp))
+        Text(
+            text = "Translated $translatedCells of $totalCells cells",
+            style = MaterialTheme.typography.bodySmall
+        )
+    }
+}
 
-@OptIn(ExperimentalComposeUiApi::class, ExperimentalMaterial3Api::class)
+@Composable
+fun TranslationStatus(
+    status: String,
+    outFile: File?,
+    onOpenFile: (File) -> Unit
+) {
+    Spacer(modifier = Modifier.height(16.dp))
+    Text(
+        text = status,
+        style = MaterialTheme.typography.bodyLarge,
+        modifier = Modifier.padding(16.dp),
+        color = if (status.startsWith("Error")) Color.Red else Color.Unspecified
+    )
+    outFile?.let { file ->
+        Button(onClick = { onOpenFile(file) }) {
+            Text("Open translated file")
+        }
+    }
+}
+
+@OptIn(ExperimentalComposeUiApi::class)
 @Composable
 fun FileDropZone(
     onFileDropped: (File) -> Unit,
     onClickClear: () -> Unit,
     selectedFile: File?,
     onTranslateClick: () -> Unit,
-    isTranslating: Boolean = false,
-    ext: String?,
+    isTranslating: Boolean,
 ) {
-
     var isHovering by remember { mutableStateOf(false) }
 
     val dropTarget = remember {
@@ -407,19 +263,13 @@ fun FileDropZone(
 
             override fun onDrop(event: DragAndDropEvent): Boolean {
                 isHovering = false
-                val dropped = (event.awtTransferable
-                    .getTransferData(DataFlavor.javaFileListFlavor) as? List<*>)
+                (event.awtTransferable.getTransferData(DataFlavor.javaFileListFlavor) as? List<*>)
                     ?.filterIsInstance<File>()
-                    ?: emptyList()
-
-                val validFiles = dropped.filter { file ->
-                    file.extension.lowercase() in listOf("xls", "xlsx", "csv", "doc", "odt", "docx", "pdf")
-                }
-
-                if (validFiles.isNotEmpty()) {
-                    onFileDropped(validFiles.first())
-                    return true
-                }
+                    ?.firstOrNull { it.extension.lowercase() in SUPPORTED_EXTENSIONS }
+                    ?.let {
+                        onFileDropped(it)
+                        return true
+                    }
                 return false
             }
         }
@@ -427,7 +277,7 @@ fun FileDropZone(
 
     Card(
         modifier = Modifier
-            .fillMaxWidth(1f)
+            .fillMaxWidth()
             .height(400.dp)
             .dragAndDropTarget(
                 shouldStartDragAndDrop = { true },
@@ -437,8 +287,7 @@ fun FileDropZone(
             width = if (isHovering) 2.dp else 1.dp,
             color = if (isHovering) Color.Blue else Color.Gray
         ),
-
-        ) {
+    ) {
         Box(
             Modifier
                 .fillMaxSize()
@@ -448,82 +297,104 @@ fun FileDropZone(
         ) {
             if (selectedFile == null) {
                 Text(
-                    text = "Перетащите файл сюда",
+                    text = "Drag and drop a file here",
                     textAlign = TextAlign.Center
                 )
             } else {
-                Column {
-                    Column(
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.Center,
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Spacer(modifier = Modifier.padding(vertical = 32.dp))
-                        Image(
-                            painterResource(
-                                when (ext) {
-                                    in listOf("xls", "xlsx", "csv") -> {
-                                        Res.drawable.gsheet_document_svgrepo_com
-                                    }
-
-                                    in listOf("doc", "docx", "odt") -> {
-                                        Res.drawable.word_document_svgrepo_com
-                                    }
-
-                                    "pdf" -> {
-                                        Res.drawable.pdf_document_svgrepo_com
-                                    }
-
-
-                                    else -> {}
-                                } as DrawableResource
-                            ),
-                            null,
-                            modifier = Modifier
-                                .size(100.dp)
-                        )
-
-                        Spacer(modifier = Modifier.height(16.dp))
-
-
-                        Text(
-                            text = selectedFile.name,
-                            style = MaterialTheme.typography.titleMedium,
-                            textAlign = TextAlign.Center,
-                            maxLines = 1,
-                            modifier = Modifier.width(300.dp)
-                        )
-
-                        Spacer(modifier = Modifier.height(16.dp))
-                    }
-
-                    Column(
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.Bottom,
-                        modifier = Modifier
-                            .fillMaxHeight()
-                    ) {
-                        Button(
-                            onClick = onTranslateClick,
-                            modifier = Modifier.fillMaxWidth(1f),
-                            enabled = !isTranslating
-                        ) {
-                            Text(if (isTranslating) "Перевод..." else "Начать перевод")
-                        }
-                        if (selectedFile != null) {
-                            Button(
-                                onClick = onClickClear,
-                                enabled = !isTranslating,
-                                modifier = Modifier.fillMaxWidth(1f),
-
-                                ) {
-                                Text("Очитсить")
-                            }
-                        }
-                    }
-                }
+                FileSelectedContent(
+                    selectedFile = selectedFile,
+                    onTranslateClick = onTranslateClick,
+                    isTranslating = isTranslating,
+                    onClickClear = onClickClear
+                )
             }
         }
+    }
+}
 
+@Composable
+private fun FileSelectedContent(
+    selectedFile: File,
+    onTranslateClick: () -> Unit,
+    isTranslating: Boolean,
+    onClickClear: () -> Unit
+) {
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.SpaceBetween,
+        modifier = Modifier.fillMaxSize()
+    ) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            modifier = Modifier.weight(1f, fill = false)
+        ) {
+            Spacer(modifier = Modifier.height(32.dp))
+            Image(
+                painter = painterResource(getFileIcon(selectedFile.extension.lowercase())),
+                contentDescription = null,
+                modifier = Modifier.size(100.dp)
+            )
+            Spacer(modifier = Modifier.height(16.dp))
+            Text(
+                text = selectedFile.name,
+                style = MaterialTheme.typography.titleMedium,
+                textAlign = TextAlign.Center,
+                maxLines = 1,
+                modifier = Modifier.width(300.dp)
+            )
+        }
+
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Bottom
+        ) {
+            Button(
+                onClick = onTranslateClick,
+                modifier = Modifier.fillMaxWidth(),
+                enabled = !isTranslating
+            ) {
+                Text(if (isTranslating) "Translating..." else "Start translation")
+            }
+            Spacer(modifier = Modifier.height(8.dp))
+            Button(
+                onClick = onClickClear,
+                enabled = !isTranslating,
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Text("Clear")
+            }
+        }
+    }
+}
+
+private fun getFileIcon(extension: String): DrawableResource {
+    return when (extension) {
+        in EXCEL_EXTENSIONS -> Res.drawable.gsheet_document_svgrepo_com
+        in WORD_EXTENSIONS -> Res.drawable.word_document_svgrepo_com
+        in PDF_EXTENSIONS -> Res.drawable.pdf_document_svgrepo_com
+        else -> Res.drawable.icons // Default icon
+    }
+}
+
+@Composable
+fun NotificationCard(title: String, message: String) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color(0xFF1E1E1E))
+            .padding(16.dp)
+    ) {
+        Image(
+            painterResource(Res.drawable.icons),
+            null,
+            modifier = Modifier.size(48.dp)
+        )
+        Spacer(modifier = Modifier.padding(start = 16.dp))
+        Column {
+            Text(title, color = Color.White, fontSize = 16.sp)
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(message, color = Color.LightGray, fontSize = 14.sp)
+        }
     }
 }
