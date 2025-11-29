@@ -69,6 +69,7 @@ tasks.withType<Jar> {
 }
 
 compose.desktop {
+    val versionRelease = "1.0.6"
 
     application {
         mainClass = "org.example.project.MainKt"
@@ -78,27 +79,22 @@ compose.desktop {
 
             targetFormats(TargetFormat.Exe, TargetFormat.Msi,  TargetFormat.Deb)
             packageName = "DocumentTools"
-            packageVersion = "1.0.5"
+            packageVersion = versionRelease
             windows {
-                packageVersion = "1.0.5"
-                exePackageVersion = "1.0.5"
-                msiPackageVersion = "1.0.5"
+                packageVersion = versionRelease
+                exePackageVersion = versionRelease
+                msiPackageVersion = versionRelease
                 iconFile.set(project.file("src/desktopMain/composeResources/drawable/icons.ico"))
             }
             linux {
-                packageVersion = "1.0.5"
-                debPackageVersion = "1.0.5"
+                packageVersion = versionRelease
+                debPackageVersion = versionRelease
                 iconFile.set(project.file("src/desktopMain/composeResources/drawable/icon.png"))
 
             }
 
         }
 
-        buildTypes.release.proguard {
-            isEnabled.set(false)
-            optimize.set(true)
-            obfuscate.set(false)
-        }
     }
 
 }
