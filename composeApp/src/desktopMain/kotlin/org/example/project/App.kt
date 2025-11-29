@@ -185,7 +185,7 @@ fun ExcelOptions(
                 onCheckedChange = onRemoveEmptyChange,
                 colors = CheckboxDefaults.colors(checkedColor = MaterialTheme.colorScheme.primary)
             )
-            Text("Remove empty rows", style = MaterialTheme.typography.bodyMedium)
+            Text("Удаление пустых строк", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onPrimaryContainer)
         }
         Row(verticalAlignment = Alignment.CenterVertically) {
             Checkbox(
@@ -193,7 +193,7 @@ fun ExcelOptions(
                 onCheckedChange = onRemoveDuplicatesChange,
                 colors = CheckboxDefaults.colors(checkedColor = MaterialTheme.colorScheme.primary)
             )
-            Text("Удаление повторяющихся строк", style = MaterialTheme.typography.bodyMedium)
+            Text("Удаление повторяющихся строк", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onPrimaryContainer)
         }
     }
 }
