@@ -142,10 +142,10 @@ fun LanguageSelector(
                 onSearchQueryChange(it)
                 if (!expanded) onExpandedChange(true)
             },
-            label = { Text("Language") },
+            label = { Text("Язык") },
             trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
             modifier = Modifier.menuAnchor(ExposedDropdownMenuAnchorType.PrimaryEditable, true).fillMaxWidth(),
-            placeholder = { Text("Search language...") },
+            placeholder = { Text("Поиск языка") },
             singleLine = true
         )
 
@@ -156,7 +156,7 @@ fun LanguageSelector(
         ) {
             if (filteredLangList.isEmpty()) {
                 DropdownMenuItem(
-                    text = { Text("No language found") },
+                    text = { Text("Язык не найден") },
                     onClick = {},
                     enabled = false
                 )
@@ -194,7 +194,7 @@ fun ExcelOptions(
                 onCheckedChange = onRemoveDuplicatesChange,
                 colors = CheckboxDefaults.colors(checkedColor = MaterialTheme.colorScheme.primary)
             )
-            Text("Remove duplicate rows", style = MaterialTheme.typography.bodyMedium)
+            Text("Удаление повторяющихся строк", style = MaterialTheme.typography.bodyMedium)
         }
     }
 }
@@ -210,7 +210,7 @@ fun TranslationProgress(
         modifier = Modifier.padding(16.dp)
     ) {
         Text(
-            text = "Translation progress: ${(translationProgress * 100).toInt()}%",
+            text = "Ход выполнения перевода: ${(translationProgress * 100).toInt()}%",
             style = MaterialTheme.typography.bodyLarge,
             color = MaterialTheme.colorScheme.onBackground
         )
@@ -227,7 +227,7 @@ fun TranslationProgress(
         )
         Spacer(modifier = Modifier.height(8.dp))
         Text(
-            text = "Translated $translatedCells of $totalCells cells",
+            text = "Переведено $translatedCells of $totalCells cells",
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onBackground
         )
@@ -256,7 +256,7 @@ fun TranslationStatus(
                 onClick = { onOpenFile(file) },
                 colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.tertiary)
             ) {
-                Text("Open translated file")
+                Text("Открыть переведенный файл")
             }
         }
     }
@@ -325,7 +325,7 @@ fun FileDropZone(
                     )
                     Spacer(modifier = Modifier.height(16.dp))
                     Text(
-                        text = "Drag and drop a file here",
+                        text = "Перетащите сюда файл",
                         textAlign = TextAlign.Center,
                         style = MaterialTheme.typography.titleLarge,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -386,7 +386,7 @@ private fun FileSelectedContent(
                 enabled = !isTranslating,
                 colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.tertiary)
             ) {
-                Text(if (isTranslating) "Translating..." else "Start translation")
+                Text(if (isTranslating) "Перевод..." else "Начать перевод")
             }
             Spacer(modifier = Modifier.height(8.dp))
             OutlinedButton(
@@ -394,7 +394,7 @@ private fun FileSelectedContent(
                 enabled = !isTranslating,
                 modifier = Modifier.fillMaxWidth(),
             ) {
-                Text("Clear")
+                Text("Очистить")
             }
         }
     }

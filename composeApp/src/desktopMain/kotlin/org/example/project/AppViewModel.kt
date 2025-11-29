@@ -270,7 +270,7 @@ class AppViewModel : ViewModel() {
         FileOutputStream(outputFile).use { fos -> translatedWorkbook.write(fos) }
 
         withContext(Dispatchers.Main) {
-            setTranslationStatus("Excel translated and saved as ${outputFile.name}")
+            setTranslationStatus("Excel переведен и сохранен как ${outputFile.name}")
             _outOpen.value = outputFile
             showCustomNotification("DocumentsTranslate", "Translation successful!", 1500)
             clearSelectedFile()
@@ -316,7 +316,7 @@ class AppViewModel : ViewModel() {
         FileOutputStream(outFile).use { fos -> doc.write(fos) }
         doc.close()
 
-        setTranslationStatus("Word document translated and saved as ${outFile.name}")
+        setTranslationStatus("Документ Word переведен и сохранен как ${outFile.name}")
         _outOpen.value = outFile
         viewModelScope.launch { showCustomNotification("DocumentsTranslate", "Translation successful!", 1500) }
         clearSelectedFile()
@@ -367,7 +367,7 @@ class AppViewModel : ViewModel() {
         newPdf.save(outPdf)
         newPdf.close()
 
-        setTranslationStatus("PDF translated and saved as ${outPdf.name}")
+        setTranslationStatus("PDF переведен и сохранен как ${outPdf.name}")
         _outOpen.value = outPdf
         viewModelScope.launch { showCustomNotification("DocumentsTranslate", "Translation successful!", 1500) }
         clearSelectedFile()
