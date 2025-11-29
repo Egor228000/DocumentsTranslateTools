@@ -92,9 +92,6 @@ compose.desktop {
                 iconFile.set(project.file("src/desktopMain/composeResources/drawable/icon.png"))
 
             }
-
         }
-
     }
-
 }
