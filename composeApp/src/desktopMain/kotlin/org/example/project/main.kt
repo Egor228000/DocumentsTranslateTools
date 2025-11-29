@@ -5,7 +5,11 @@ import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.application
 import exceltranslate.composeapp.generated.resources.Res
 import exceltranslate.composeapp.generated.resources.icons
+import io.github.kdroidfilter.platformtools.darkmodedetector.isSystemInDarkMode
 import io.github.kdroidfilter.platformtools.darkmodedetector.windows.setWindowsAdaptiveTitleBar
+import org.example.project.Theme.DarkColors
+import org.example.project.Theme.LightColors
+import org.example.project.Theme.MyAppTheme
 import org.jetbrains.compose.resources.painterResource
 import java.awt.Dimension
 
@@ -18,6 +22,10 @@ fun main() = application {
         window.minimumSize = Dimension(500, 700)
         window.setWindowsAdaptiveTitleBar()
         val addViewModel = rememberSaveable { AppViewModel() }
-        App(addViewModel)
+        MyAppTheme(
+            colorScheme = if (isSystemInDarkMode()) DarkColors else LightColors
+        ) {
+            App(addViewModel)
+        }
     }
 }

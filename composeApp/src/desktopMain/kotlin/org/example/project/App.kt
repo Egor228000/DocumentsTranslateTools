@@ -50,7 +50,7 @@ fun App(viewModel: AppViewModel) {
     var expandedLanguage by remember { mutableStateOf(false) }
 
     Column(
-        modifier = Modifier.padding(16.dp).fillMaxSize(),
+        modifier = Modifier.background(MaterialTheme.colorScheme.background).padding(16.dp).fillMaxSize(),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         LanguageSelector(
@@ -179,14 +179,22 @@ fun ExcelOptions(
     removeDuplicates: Boolean,
     onRemoveDuplicatesChange: (Boolean) -> Unit
 ) {
-    Column {
+    Column(modifier = Modifier.padding(vertical = 8.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Checkbox(removeEmpty, onCheckedChange = onRemoveEmptyChange)
-            Text("Remove empty rows")
+            Checkbox(
+                checked = removeEmpty,
+                onCheckedChange = onRemoveEmptyChange,
+                colors = CheckboxDefaults.colors(checkedColor = MaterialTheme.colorScheme.primary)
+            )
+            Text("Remove empty rows", style = MaterialTheme.typography.bodyMedium)
         }
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Checkbox(removeDuplicates, onCheckedChange = onRemoveDuplicatesChange)
-            Text("Remove duplicate rows")
+            Checkbox(
+                checked = removeDuplicates,
+                onCheckedChange = onRemoveDuplicatesChange,
+                colors = CheckboxDefaults.colors(checkedColor = MaterialTheme.colorScheme.primary)
+            )
+            Text("Remove duplicate rows", style = MaterialTheme.typography.bodyMedium)
         }
     }
 }
@@ -203,7 +211,8 @@ fun TranslationProgress(
     ) {
         Text(
             text = "Translation progress: ${(translationProgress * 100).toInt()}%",
-            style = MaterialTheme.typography.bodyLarge
+            style = MaterialTheme.typography.bodyLarge,
+            color = MaterialTheme.colorScheme.onBackground
         )
         Spacer(modifier = Modifier.height(8.dp))
         Slider(
@@ -211,11 +220,16 @@ fun TranslationProgress(
             onValueChange = {},
             modifier = Modifier.width(350.dp),
             enabled = false,
+            colors = SliderDefaults.colors(
+                thumbColor = MaterialTheme.colorScheme.tertiary,
+                activeTrackColor = MaterialTheme.colorScheme.tertiary
+            )
         )
         Spacer(modifier = Modifier.height(8.dp))
         Text(
             text = "Translated $translatedCells of $totalCells cells",
-            style = MaterialTheme.typography.bodySmall
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onBackground
         )
     }
 }
@@ -226,16 +240,24 @@ fun TranslationStatus(
     outFile: File?,
     onOpenFile: (File) -> Unit
 ) {
-    Spacer(modifier = Modifier.height(16.dp))
-    Text(
-        text = status,
-        style = MaterialTheme.typography.bodyLarge,
-        modifier = Modifier.padding(16.dp),
-        color = if (status.startsWith("Error")) Color.Red else Color.Unspecified
-    )
-    outFile?.let { file ->
-        Button(onClick = { onOpenFile(file) }) {
-            Text("Open translated file")
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        modifier = Modifier.padding(top = 16.dp)
+    ) {
+        Text(
+            text = status,
+            style = MaterialTheme.typography.bodyLarge,
+            modifier = Modifier.padding(horizontal = 16.dp),
+            color = if (status.startsWith("Error")) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary
+        )
+        outFile?.let { file ->
+            Spacer(modifier = Modifier.height(8.dp))
+            Button(
+                onClick = { onOpenFile(file) },
+                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.tertiary)
+            ) {
+                Text("Open translated file")
+            }
         }
     }
 }
@@ -256,11 +278,9 @@ fun FileDropZone(
             override fun onStarted(event: DragAndDropEvent) {
                 isHovering = true
             }
-
             override fun onEnded(event: DragAndDropEvent) {
                 isHovering = false
             }
-
             override fun onDrop(event: DragAndDropEvent): Boolean {
                 isHovering = false
                 (event.awtTransferable.getTransferData(DataFlavor.javaFileListFlavor) as? List<*>)
@@ -285,21 +305,32 @@ fun FileDropZone(
             ),
         border = BorderStroke(
             width = if (isHovering) 2.dp else 1.dp,
-            color = if (isHovering) Color.Blue else Color.Gray
+            color = if (isHovering) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline
         ),
+        colors = CardDefaults.cardColors(
+            containerColor = if (isHovering) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.1f) else MaterialTheme.colorScheme.surfaceVariant
+        )
     ) {
         Box(
-            Modifier
-                .fillMaxSize()
-                .background(if (isHovering) Color(0xFFE0E0E0) else Color(0xFFF5F5F5))
-                .padding(16.dp),
+            Modifier.fillMaxSize().padding(16.dp),
             contentAlignment = Alignment.Center
         ) {
             if (selectedFile == null) {
-                Text(
-                    text = "Drag and drop a file here",
-                    textAlign = TextAlign.Center
-                )
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Icon(
+                        painter = painterResource(Res.drawable.word_document_svgrepo_com),
+                        contentDescription = "Upload icon",
+                        modifier = Modifier.size(64.dp),
+                        tint = MaterialTheme.colorScheme.primary
+                    )
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Text(
+                        text = "Drag and drop a file here",
+                        textAlign = TextAlign.Center,
+                        style = MaterialTheme.typography.titleLarge,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
             } else {
                 FileSelectedContent(
                     selectedFile = selectedFile,
@@ -340,7 +371,8 @@ private fun FileSelectedContent(
                 style = MaterialTheme.typography.titleMedium,
                 textAlign = TextAlign.Center,
                 maxLines = 1,
-                modifier = Modifier.width(300.dp)
+                modifier = Modifier.width(300.dp),
+                color = MaterialTheme.colorScheme.onSurface
             )
         }
 
@@ -351,12 +383,13 @@ private fun FileSelectedContent(
             Button(
                 onClick = onTranslateClick,
                 modifier = Modifier.fillMaxWidth(),
-                enabled = !isTranslating
+                enabled = !isTranslating,
+                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.tertiary)
             ) {
                 Text(if (isTranslating) "Translating..." else "Start translation")
             }
             Spacer(modifier = Modifier.height(8.dp))
-            Button(
+            OutlinedButton(
                 onClick = onClickClear,
                 enabled = !isTranslating,
                 modifier = Modifier.fillMaxWidth(),
@@ -382,7 +415,7 @@ fun NotificationCard(title: String, message: String) {
         verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier
             .fillMaxSize()
-            .background(Color(0xFF1E1E1E))
+            .background(MaterialTheme.colorScheme.surface)
             .padding(16.dp)
     ) {
         Image(
@@ -392,9 +425,9 @@ fun NotificationCard(title: String, message: String) {
         )
         Spacer(modifier = Modifier.padding(start = 16.dp))
         Column {
-            Text(title, color = Color.White, fontSize = 16.sp)
+            Text(title, color = MaterialTheme.colorScheme.onSurface, fontSize = 16.sp)
             Spacer(modifier = Modifier.height(4.dp))
-            Text(message, color = Color.LightGray, fontSize = 14.sp)
+            Text(message, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 14.sp)
         }
     }
 }
